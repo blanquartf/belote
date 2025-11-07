@@ -23,39 +23,16 @@ export interface Env {
 }
 const BASIC_USER = 'admin';
 const BASIC_PASS = 'password';
-
-function shuffleArray<T>(array: T[]): T[] {
-	const newArray = [...array]; // Create a shallow copy to avoid modifying the original array
-	let currentIndex = newArray.length;
-	let randomIndex: number;
-
-	// While there remain elements to shuffle.
-	while (currentIndex !== 0) {
-		// Pick a remaining element.
-		randomIndex = Math.floor(Math.random() * currentIndex);
-		currentIndex--;
-
-		// And swap it with the current element.
-		[newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
-	}
-
-	return newArray;
-}
-
-function replacer(key: string, value: any): any {
-	if (value instanceof Map) {
-		return Array.from(value.values());
-	}
-	return value;
-}
-
+const IP_HEADER = 'CF-Connecting-IP';
 type Tables = Map<string, Map<string, User>>;
 
 export class MyDurableObject extends DurableObject<Env> {
 	tables!: Tables;
+	sessions: Map<WebSocket, { [key: string]: string }>;
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
+		this.sessions = new Map();
 
 		ctx.blockConcurrencyWhile(async () => {
 			this.tables = (await ctx.storage.get('tables')) || new Map();
@@ -73,7 +50,6 @@ export class MyDurableObject extends DurableObject<Env> {
 			}
 		});
 	}
-
 	async finish(username: string, ip?: string): Promise<boolean> {
 		this.tables = (await this.ctx.storage.get('tables')) || new Map();
 		let found = false;
@@ -83,11 +59,8 @@ export class MyDurableObject extends DurableObject<Env> {
 			if (user === undefined) {
 				return;
 			}
-
-			if (ip !== undefined) {
-				if (ip != user.ip) {
-					return false;
-				}
+			if (ip !== undefined && ip != user.ip) {
+				return;
 			}
 
 			found = true;
@@ -105,22 +78,20 @@ export class MyDurableObject extends DurableObject<Env> {
 
 		if (oldTableName.length === 0) {
 			await this.ctx.storage.put('tables', this.tables);
-			return true;
+		} else {
+			let oldTable = this.tables.get(oldTableName);
+			if (oldTable === undefined) {
+				await this.ctx.storage.put('tables', this.tables);
+			} else {
+				let panamaTable = this.tables.get('panama') || new Map();
+				for (let user of oldTable.values()) {
+					panamaTable.set(user.name, user);
+				}
+				this.tables.set('panama', panamaTable);
+				this.tables.delete(oldTableName);
+				await this.ctx.storage.put('tables', this.tables);
+			}
 		}
-
-		let oldTable = this.tables.get(oldTableName);
-		if (oldTable === undefined) {
-			await this.ctx.storage.put('tables', this.tables);
-			return true;
-		}
-
-		let panamaTable = this.tables.get('panama') || new Map();
-		for (let user of oldTable.values()) {
-			panamaTable.set(user.name, user);
-		}
-		this.tables.set('panama', panamaTable);
-		this.tables.delete(oldTableName);
-		await this.ctx.storage.put('tables', this.tables);
 		return true;
 	}
 	async quit(username: string, ip?: string): Promise<boolean> {
@@ -132,11 +103,8 @@ export class MyDurableObject extends DurableObject<Env> {
 			if (user === undefined) {
 				return;
 			}
-
-			if (ip !== undefined) {
-				if (ip != user.ip) {
-					return;
-				}
+			if (ip !== undefined && ip != user.ip) {
+				return;
 			}
 
 			found = true;
@@ -152,26 +120,23 @@ export class MyDurableObject extends DurableObject<Env> {
 
 		if (oldTableName.length === 0) {
 			await this.ctx.storage.put('tables', this.tables);
-			return true;
-		}
+		} else {
+			let oldTable = this.tables.get(oldTableName);
+			if (oldTable === undefined) {
+				await this.ctx.storage.put('tables', this.tables);
+			} else {
+				let panamaTable = this.tables.get('panama') || new Map();
+				for (let user of oldTable.values()) {
+					panamaTable.set(user.name, user);
+				}
 
-		let oldTable = this.tables.get(oldTableName);
-		if (oldTable === undefined) {
-			await this.ctx.storage.put('tables', this.tables);
-			return true;
+				this.tables.set('panama', panamaTable);
+				this.tables.delete(oldTableName);
+				await this.ctx.storage.put('tables', this.tables);
+			}
 		}
-
-		let panamaTable = this.tables.get('panama') || new Map();
-		for (let user of oldTable.values()) {
-			panamaTable.set(user.name, user);
-		}
-
-		this.tables.set('panama', panamaTable);
-		this.tables.delete(oldTableName);
-		await this.ctx.storage.put('tables', this.tables);
 		return true;
 	}
-
 	async join(username: string, ip: string): Promise<void> {
 		this.tables = (await this.ctx.storage.get('tables')) || new Map();
 
@@ -190,7 +155,7 @@ export class MyDurableObject extends DurableObject<Env> {
 		if (!existed) {
 			const user = new User(username, ip);
 			let table = this.tables.get('panama');
-			if (!table) {
+			if (table === undefined) {
 				table = new Map<string, User>();
 				this.tables.set('panama', table);
 			}
@@ -221,12 +186,21 @@ export class MyDurableObject extends DurableObject<Env> {
 		console.log('Pretty Tables:', pretty);
 		return pretty;
 	}
-	async deleteTables(): Promise<void> {
+	async deleteTables(): Promise<boolean> {
+		this.tables = (await this.ctx.storage.get('tables')) || new Map();
+		if (this.tables.size == 0) {
+			return false;
+		}
 		await this.ctx.storage.delete('tables');
 		this.tables = new Map();
+		return true;
 	}
-	async generateTables() {
+	async generateTables(): Promise<boolean> {
 		this.tables = (await this.ctx.storage.get('tables')) || new Map();
+		if (this.tables.size == 0) {
+			return false;
+		}
+
 		let users: User[] = [];
 		this.tables.forEach((table, _) => {
 			table.forEach((user, _) => {
@@ -239,7 +213,6 @@ export class MyDurableObject extends DurableObject<Env> {
 		await this.ctx.storage.put('tables', this.tables);
 
 		let tableIndex = 1;
-
 		while (users.length > 0) {
 			if (users.length == 7) {
 				let tableDe7 = users.splice(0, 7);
@@ -270,28 +243,28 @@ export class MyDurableObject extends DurableObject<Env> {
 			await this.assignTable(`table-${tableIndex}`, tableDe4);
 			tableIndex++;
 		}
+		return true;
 	}
 	async clearDo(): Promise<void> {
 		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
 		this.tables = new Map();
 	}
+	async notifyAll(reason: string) {
+		this.sessions.forEach((_, session) => {
+			session.send(`you must refresh tables because: ${reason}`);
+		});
+	}
 	async fetch(request: Request): Promise<Response> {
 		const webSocketPair = new WebSocketPair();
 		const [client, server] = Object.values(webSocketPair);
-
 		this.ctx.acceptWebSocket(server);
-
+		const id = crypto.randomUUID();
+		this.sessions.set(server, { id });
 		return new Response(null, {
 			status: 101,
 			webSocket: client,
 		});
-	}
-	async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
-		ws.send(`[Durable Object] message: ${message}, connections: ${this.ctx.getWebSockets().length}`);
-	}
-	async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
-		ws.close(code, 'Durable Object is closing WebSocket');
 	}
 }
 
@@ -312,24 +285,32 @@ export default {
 				if (!username) {
 					return new Response('Missing username', { status: 400 });
 				}
-				const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+				const ip = request.headers.get(IP_HEADER) || 'unknown';
 				await stub.join(username, ip);
+				await stub.notifyAll(`user ${username} joined the Meltdown`);
 				return new Response('🎉 User joined!', success);
 			case '/tables': {
 				const tables = await stub.getTables();
 				return new Response(tables, success);
 			}
 			case '/meltdown': {
-				return stub.fetch(request);
+				const username = url.searchParams.get('username');
+				if (!username) {
+					return new Response('Missing username', { status: 400 });
+				}
+				const response = stub.fetch(request);
+				console.log(`user ${username} connected to Meltdown room`);
+				return response;
 			}
 			case '/me/quit': {
 				const username = url.searchParams.get('username');
 				if (!username) {
 					return new Response('Missing username', { status: 400 });
 				}
-				const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+				const ip = request.headers.get(IP_HEADER) || 'unknown';
 				const moved = await stub.quit(username, ip);
 				if (moved) {
+					await stub.notifyAll(`user ${username} joined the Meltdown`);
 					return new Response(`🎉 User ${username} left!`, success);
 				} else {
 					return new Response(`User ${username} not found or not authorized`, { status: 404 });
@@ -340,9 +321,10 @@ export default {
 				if (!username) {
 					return new Response('Missing username', { status: 400 });
 				}
-				const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+				const ip = request.headers.get(IP_HEADER) || 'unknown';
 				const moved = await stub.finish(username, ip);
 				if (moved) {
+					await stub.notifyAll(`user ${username} and its friends at the same table finished their game`);
 					return new Response(`🎉 User ${username} moved!`, success);
 				} else {
 					return new Response(`User ${username} not found or not authorized`, { status: 404 });
@@ -350,6 +332,12 @@ export default {
 			}
 
 			// NEEDS AUTH
+			case '/users/notify': {
+				return authenticate(request, env, async () => {
+					await stub.notifyAll('force notify all');
+					return new Response(`🎉 Users notified!`, success);
+				});
+			}
 			case '/users/delete': {
 				return authenticate(request, env, async () => {
 					const username = url.searchParams.get('username');
@@ -358,6 +346,7 @@ export default {
 					}
 					const deleted = await stub.quit(username, undefined);
 					if (deleted) {
+						await stub.notifyAll(`user ${username} deleted from Meltdown`);
 						return new Response(`🎉 User ${username} deleted!`, success);
 					} else {
 						return new Response(`User ${username} not found`, { status: 404 });
@@ -366,30 +355,43 @@ export default {
 			}
 			case '/users/load_fixtures': {
 				return authenticate(request, env, async () => {
-					const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+					const ip = request.headers.get(IP_HEADER) || 'unknown';
 					const fixtureUsers = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy', 'seb'];
 					for (let username of fixtureUsers) {
 						await stub.join(username, ip);
 					}
+					await stub.notifyAll('fixtures loaded');
 					return new Response('🎉 Fixture users loaded!', success);
-				});
-			}
-			case '/users/clear': {
-				return authenticate(request, env, async () => {
-					await stub.clearDo();
-					return new Response('🎉 All users cleared!', success);
 				});
 			}
 			case '/tables/clear': {
 				return authenticate(request, env, async () => {
-					const tables = await stub.deleteTables();
+					if (await stub.deleteTables()) {
+						await stub.notifyAll(`tables cleared`);
+					}
 					return new Response('🎉 Tables cleared', success);
 				});
 			}
 			case '/tables/generate': {
 				return authenticate(request, env, async () => {
-					await stub.generateTables();
+					if (await stub.generateTables()) {
+						await stub.notifyAll(`tables generated`);
+					}
 					return new Response('🎉 New tables generated', success);
+				});
+			}
+			case '/admin/meltdown': {
+				return authenticate(request, env, async () => {
+					const response = stub.fetch(request);
+					console.log('admin user connected to room');
+					return response;
+				});
+			}
+			case '/admin/storage/delete': {
+				return authenticate(request, env, async () => {
+					await stub.clearDo();
+					await stub.notifyAll('users deleted');
+					return new Response('🎉 All users cleared!', success);
 				});
 			}
 			default:
@@ -427,4 +429,29 @@ async function authenticate(request: Request, env: Env, operation: () => Promise
 	}
 
 	return await operation();
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+	const newArray = [...array]; // Create a shallow copy to avoid modifying the original array
+	let currentIndex = newArray.length;
+	let randomIndex: number;
+
+	// While there remain elements to shuffle.
+	while (currentIndex !== 0) {
+		// Pick a remaining element.
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex--;
+
+		// And swap it with the current element.
+		[newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
+	}
+
+	return newArray;
+}
+
+function replacer(key: string, value: any): any {
+	if (value instanceof Map) {
+		return Array.from(value.values());
+	}
+	return value;
 }

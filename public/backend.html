@@ -11,27 +11,67 @@
 		<br /><br />
 		<button id="load_fixtures" type="button">Load users</button>
 		<br /><br />
-		<button id="delete_users" type="button">Delete users</button>
+		<button id="clear_tables" type="button">Clear Tables</button>
 		<br /><br />
-		<button id="generate_tables">Distribute Tables</button>
+		<button id="storage_delete" type="button">Delete storage</button>
 		<br /><br />
-		<button id="clear_tables">Clear Tables</button>
+		<button id="generate_tables" type="button">Distribute Tables</button>
+		<br /><br />
+		<button id="notify_all" type="button">Notify all</button>
 		<br /><br />
 		<ul id="tables"></ul>
+		<div id="messages">disconnected</div>
 		<script>
 			// @ts-check
+			const connectWebsocket = (username) => {
+				let hostname = window.location.host;
+				const scheme = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
+				let ws = new WebSocket(scheme + hostname + '/meltdown?username=' + encodeURIComponent(username));
+				const messagesDiv = document.getElementById('messages');
+				if (!messagesDiv) {
+					console.log('messages element not found');
+					return;
+				}
+
+				ws.onopen = () => {
+					const msg = 'Connected to Meltdown, tables updated';
+					messagesDiv.innerHTML = msg;
+					console.log(msg);
+					refreshTables();
+				};
+
+				ws.onmessage = (event) => {
+					const msg = `Update tables because : ${event.data}`;
+					console.log(msg);
+					messagesDiv.innerHTML = msg;
+					refreshTables();
+				};
+
+				ws.onclose = () => {
+					const msg = 'Disconnected from Meltdown!';
+					console.log(msg);
+					messagesDiv.innerHTML = msg;
+					const ulTables = document.getElementById('tables');
+					if (!ulTables) {
+						console.log('tables element not found');
+						return;
+					}
+					ulTables.innerHTML = '';
+				};
+			};
+
 			const refreshTables = () =>
 				fetch('/tables')
 					.then((resp) => resp.text())
 					.then((text) => {
 						const ulTables = document.getElementById('tables');
 						if (!ulTables) {
+							console.log('tables element not found');
 							return;
 						}
 						ulTables.innerHTML = '';
 
 						const tables = JSON.parse(text);
-
 						console.log('Tables:', tables);
 						for (const [table, users] of Object.entries(tables)) {
 							let liTable = document.createElement('li');
@@ -43,9 +83,10 @@
 								let liUser = document.createElement('li');
 								let removeButton = document.createElement('button');
 								removeButton.innerText =
-									`IP: ${user.ip}` +
-									` Joined: ${new Date(user.joinedAt).toLocaleString()}` +
-									` Activity: ${new Date(user.lastActiveAt).toLocaleString()}`;
+									`${user.name}` +
+									` [IP: ${user.ip}]` +
+									` [Joined: ${new Date(user.joinedAt).toLocaleString()}]` +
+									` [Activity: ${new Date(user.lastActiveAt).toLocaleString()}]`;
 
 								removeButton.addEventListener('click', function (event) {
 									fetch('/users/delete?username=' + encodeURIComponent(user.name)).then(() => {
@@ -64,10 +105,11 @@
 					});
 
 			(function () {
-				refreshTables();
+				connectWebsocket();
 
 				const loadFixturesButton = document.getElementById('load_fixtures');
 				if (!loadFixturesButton) {
+					console.log('load fixtures button not found');
 					return;
 				}
 				loadFixturesButton.addEventListener('click', function (event) {
@@ -81,6 +123,7 @@
 
 				const clearTablesButton = document.getElementById('clear_tables');
 				if (!clearTablesButton) {
+					console.log('clear tables button not found');
 					return;
 				}
 				clearTablesButton.addEventListener('click', function (event) {
@@ -94,6 +137,7 @@
 
 				const generateTablesButton = document.getElementById('generate_tables');
 				if (!generateTablesButton) {
+					console.log('generate tables button not found');
 					return;
 				}
 				generateTablesButton.addEventListener('click', function (event) {
@@ -105,16 +149,30 @@
 						});
 				});
 
-				const logoutUsersButton = document.getElementById('delete_users');
-				if (!logoutUsersButton) {
+				const deleteStorageButton = document.getElementById('storage_delete');
+				if (!deleteStorageButton) {
+					console.log('delete storage button not found');
 					return;
 				}
-				logoutUsersButton.addEventListener('click', function (event) {
-					fetch('/users/clear')
+				deleteStorageButton.addEventListener('click', function (event) {
+					fetch('/admin/storage/delete')
 						.then((resp) => resp.text())
 						.then((text) => {
 							console.log(text);
 							refreshTables();
+						});
+				});
+
+				const notifyAllButton = document.getElementById('notify_all');
+				if (!notifyAllButton) {
+					console.log('notify all button not found');
+					return;
+				}
+				notifyAllButton.addEventListener('click', function (event) {
+					fetch('/users/notify')
+						.then((resp) => resp.text())
+						.then((text) => {
+							console.log(text);
 						});
 				});
 			})();
