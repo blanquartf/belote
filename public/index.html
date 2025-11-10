@@ -112,6 +112,13 @@
 							const joinButtonInput = /** @type {HTMLInputElement} */ (joinButton);
 							joinButtonInput.disabled = false;
 							localStorage.removeItem('username');
+
+							const connectedDiv = document.getElementById('connected');
+							if (!connectedDiv) {
+								console.log('connected element not found');
+								return;
+							}
+							connectedDiv.innerHTML = '';
 						}
 					});
 
@@ -148,8 +155,14 @@
 				const finishedButton = document.createElement('button');
 				finishedButton.innerHTML = 'Game finished (return to Panama)!';
 				finishedButton.addEventListener('click', function (event) {
-					fetch('/me/finish?username=' + encodeURIComponent(username)).then(() => {
-						console.log('User finished:', username);
+					fetch('/me/finish?username=' + encodeURIComponent(username)).then((response) => {
+						if (response.status == 404) {
+							localStorage.removeItem('username');
+							connectedDiv.innerHTML = '';
+							joinButtonInput.disabled = false;
+						} else {
+							console.log('User finished:', username);
+						}
 						refreshTables();
 					});
 				});
@@ -159,9 +172,15 @@
 				const readyButton = document.createElement('button');
 				readyButton.innerHTML = 'Ready to play!';
 				readyButton.addEventListener('click', function (event) {
-					fetch('/me/ready?username=' + encodeURIComponent(username)).then(() => {
-						console.log('User ready:', username);
-						refreshTables();
+					fetch('/me/ready?username=' + encodeURIComponent(username)).then((response) => {
+						if (response.status == 404) {
+							localStorage.removeItem('username');
+							connectedDiv.innerHTML = '';
+							joinButtonInput.disabled = false;
+						} else {
+							console.log('User ready:', username);
+							refreshTables();
+						}
 					});
 				});
 				connectedDiv.appendChild(readyButton);
@@ -205,6 +224,8 @@
 							refreshTables();
 						});
 				});
+
+				refreshTables();
 			})();
 		</script>
 	</body>
