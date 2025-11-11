@@ -5,6 +5,7 @@ import { User } from './user';
 export interface Env {
 	ADMIN_USER: string;
 	ADMIN_PASSWORD: string;
+	PLAYERS: string;
 	MY_DURABLE_OBJECT: DurableObjectNamespace<MyDurableObject>;
 }
 
@@ -22,13 +23,14 @@ export { MyDurableObject };
 export default {
 	async fetch(request: Request, env: Env, _ctx): Promise<Response> {
 		const url = new URL(request.url);
-		const stub = env.MY_DURABLE_OBJECT.getByName('belote');
 		const internalError = new Response(`internal error`, { status: 500 });
 		const unauthorizedError = new Response(`unauthorized`, { status: 401 });
 		const missingUsername = new Response('missing username', { status: 400 });
 		const unchanged = new Response(null, { status: 304 });
 		const ip = request.headers.get(IP_HEADER) || 'unknown';
 		const username = url.searchParams.get('username');
+
+		const stub = env.MY_DURABLE_OBJECT.getByName('belote');
 		if (!stub) {
 			return new Response('Durable Object not found', { status: 500 });
 		}
@@ -185,8 +187,7 @@ export default {
 			}
 			case '/admin/users/fixtures': {
 				return authenticate(request, env, async () => {
-					const fixtureUsers = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy', 'seb'];
-					for (let username of fixtureUsers) {
+					for (let username of JSON.parse(env.PLAYERS)) {
 						await stub.join(username, undefined);
 					}
 					await stub.notifyAll('fixtures loaded');
