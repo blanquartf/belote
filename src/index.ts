@@ -193,6 +193,36 @@ export default {
 					return new Response('🎉 Fixture users loaded!', success);
 				});
 			}
+			case '/admin/tables/delete': {
+				return authenticate(request, env, async () => {
+					const table = url.searchParams.get('table');
+					if (!table) {
+						return new Response('missing table name', { status: 400 });
+					}
+					console.log(table);
+					const deleted = await stub.tableDelete(table);
+					if (!deleted) {
+						return unchanged;
+					}
+					await stub.notifyAll('table deleted');
+					return new Response('🎉 table deleted!', success);
+				});
+			}
+			case '/admin/tables/notready': {
+				return authenticate(request, env, async () => {
+					const table = url.searchParams.get('table');
+					if (!table) {
+						return new Response('missing table name', { status: 400 });
+					}
+					console.log(table);
+					const notReady = await stub.tableNotReady(table);
+					if (!notReady) {
+						return unchanged;
+					}
+					await stub.notifyAll('table not ready');
+					return new Response('🎉 table not ready!', success);
+				});
+			}
 			case '/admin/tables/ready': {
 				return authenticate(request, env, async () => {
 					const table = url.searchParams.get('table');

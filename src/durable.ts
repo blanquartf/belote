@@ -140,14 +140,14 @@ export class MyDurableObject extends DurableObject<Env> {
 			return false;
 		}
 
-		const table = tables.get(tableName) || new Map<string, User>();
-		if (table.size == 0) {
+		const table = tables.get(tableName);
+		if (!table) {
 			console.log(`table ${tableName} not found`);
 			return false;
 		}
+
 		let ready = false;
 		for (const [username, user] of table) {
-			console.log(user);
 			console.log(`setting table ${tableName} ready for user ${username}`);
 			if (!user.ready) {
 				setReadyOrNot(user, true);
@@ -158,6 +158,54 @@ export class MyDurableObject extends DurableObject<Env> {
 			await this.ctx.storage.put('tables', tables);
 		}
 		return ready;
+	}
+	async tableNotReady(tableName: string): Promise<boolean> {
+		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		if (tables.size == 0) {
+			return false;
+		}
+
+		const table = tables.get(tableName);
+		if (!table) {
+			console.log(`table ${tableName} not found`);
+			return false;
+		}
+
+		let notReady = false;
+		for (const [username, user] of table) {
+			console.log(`setting table ${tableName} not ready for user ${username}`);
+			if (user.ready) {
+				setReadyOrNot(user, false);
+				notReady = true;
+			}
+		}
+		if (notReady) {
+			await this.ctx.storage.put('tables', tables);
+		}
+		return notReady;
+	}
+	async tableDelete(tableName: string): Promise<boolean> {
+		if (tableName == DEFAULT_TABLE) {
+			return false;
+		}
+		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		if (tables.size == 0) {
+			return false;
+		}
+
+		const table = tables.get(tableName);
+		if (!table) {
+			return false;
+		}
+
+		const panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
+		for (const [username, user] of table) {
+			panamaTable.set(username, user);
+		}
+
+		tables.delete(tableName);
+		await this.ctx.storage.put('tables', tables);
+		return true;
 	}
 	async deleteTables(): Promise<boolean> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();

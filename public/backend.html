@@ -189,6 +189,39 @@
 										});
 								});
 								liTable.appendChild(tableReadyButton);
+
+								const tableNotReadyButton = document.createElement('button');
+								tableNotReadyButton.innerText = 'Not Ready';
+								tableNotReadyButton.addEventListener('click', function (event) {
+									fetch('/admin/tables/notready?table=' + encodeURIComponent(table))
+										.then(() => {
+											console.log('Table not ready:', table);
+											refreshTables();
+										})
+										.catch((error) => {
+											const msg = 'Fetch error:' + error;
+											messagesDiv.innerHTML = msg;
+											console.error(msg);
+										});
+								});
+								liTable.appendChild(tableNotReadyButton);
+
+								const tableDeleteButton = document.createElement('button');
+								tableDeleteButton.innerText = 'Delete';
+								tableDeleteButton.addEventListener('click', function (event) {
+									fetch('/admin/tables/delete?table=' + encodeURIComponent(table))
+										.then(() => {
+											console.log('Table deleted:', table);
+											refreshTables();
+										})
+										.catch((error) => {
+											const msg = 'Fetch error:' + error;
+											messagesDiv.innerHTML = msg;
+											console.error(msg);
+										});
+								});
+								liTable.appendChild(tableDeleteButton);
+
 								liTable.appendChild(ulUsers);
 								ulTables.appendChild(liTable);
 							}
