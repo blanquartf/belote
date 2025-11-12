@@ -23,6 +23,10 @@
 		<br /><br />
 		<ul id="tables"></ul>
 		<div id="messages">disconnected</div>
+		<a href="/public/tables">Dump tables</a>
+		<br />
+		<a href="/admin/users">Dump users</a>
+		<br />
 		<a href="/">Frontend</a>
 		<br />
 		<script>
@@ -84,21 +88,23 @@
 							ulTables.innerHTML = '';
 
 							const tables = JSON.parse(text);
-							console.log('Tables:', tables);
+							// console.log('Tables:', tables);
 							for (const [table, users] of Object.entries(tables)) {
 								const liTable = document.createElement('li');
 								const ulUsers = document.createElement('ul');
-								console.log('Table:', table);
+								// console.log('Table:', table);
 
+								let readyUsers = 0;
 								for (const user of users) {
-									console.log('User:', user);
+									// console.log('User:', user);
 									const liUser = document.createElement('li');
 									const deleteButton = document.createElement('button');
 									deleteButton.innerText = 'Delete';
 									deleteButton.addEventListener('click', function (event) {
 										fetch('/admin/users/delete?username=' + encodeURIComponent(user.name))
-											.then(() => {
-												console.log('Delete user:', user.name);
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
 												refreshTables();
 											})
 											.catch((error) => {
@@ -113,8 +119,9 @@
 									finishButton.innerText = 'Finish';
 									finishButton.addEventListener('click', function (event) {
 										fetch('/admin/users/finish?username=' + encodeURIComponent(user.name))
-											.then(() => {
-												console.log('Finished user:', user.name);
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
 												refreshTables();
 											})
 											.catch((error) => {
@@ -129,8 +136,9 @@
 									readyButton.innerText = 'Ready';
 									readyButton.addEventListener('click', function (event) {
 										fetch('/admin/users/ready?username=' + encodeURIComponent(user.name))
-											.then(() => {
-												console.log('Ready user:', user.name);
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
 												refreshTables();
 											})
 											.catch((error) => {
@@ -145,8 +153,9 @@
 									notReadyButton.innerText = 'Not Ready';
 									notReadyButton.addEventListener('click', function (event) {
 										fetch('/admin/users/notready?username=' + encodeURIComponent(user.name))
-											.then(() => {
-												console.log('Ready not user:', user.name);
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
 												refreshTables();
 											})
 											.catch((error) => {
@@ -164,6 +173,7 @@
 										` [Joined: ${new Date(user.joinedAt).toLocaleString()}]` +
 										` [Activity: ${new Date(user.lastActiveAt).toLocaleString()}]`;
 									if (user.ready) {
+										readyUsers++;
 										spanInfo.setAttribute('style', 'color: #006400');
 									} else {
 										spanInfo.setAttribute('style', 'color: #FF8C00');
@@ -172,14 +182,15 @@
 
 									ulUsers.appendChild(liUser);
 								}
-								liTable.innerText = table + ' (' + users.length + ' players)';
+								liTable.innerText = table + ' (' + readyUsers + ' / ' + users.length + ' players)';
 
 								const tableReadyButton = document.createElement('button');
 								tableReadyButton.innerText = 'Ready';
 								tableReadyButton.addEventListener('click', function (event) {
 									fetch('/admin/tables/ready?table=' + encodeURIComponent(table))
-										.then(() => {
-											console.log('Table ready:', table);
+										.then((resp) => resp.text())
+										.then((text) => {
+											// console.log(text);
 											refreshTables();
 										})
 										.catch((error) => {
@@ -194,8 +205,9 @@
 								tableNotReadyButton.innerText = 'Not Ready';
 								tableNotReadyButton.addEventListener('click', function (event) {
 									fetch('/admin/tables/notready?table=' + encodeURIComponent(table))
-										.then(() => {
-											console.log('Table not ready:', table);
+										.then((resp) => resp.text())
+										.then((text) => {
+											// console.log(text);
 											refreshTables();
 										})
 										.catch((error) => {
@@ -210,8 +222,9 @@
 								tableDeleteButton.innerText = 'Delete';
 								tableDeleteButton.addEventListener('click', function (event) {
 									fetch('/admin/tables/delete?table=' + encodeURIComponent(table))
-										.then(() => {
-											console.log('Table deleted:', table);
+										.then((resp) => resp.text())
+										.then((text) => {
+											// console.log(text);
 											refreshTables();
 										})
 										.catch((error) => {
@@ -247,6 +260,7 @@
 					fetch('/admin/users/join?username=' + encodeURIComponent(username))
 						.then((resp) => resp.text())
 						.then((text) => {
+							// console.log(text);
 							refreshTables();
 						});
 				});
@@ -260,7 +274,7 @@
 					fetch('/admin/users/fixtures')
 						.then((resp) => resp.text())
 						.then((text) => {
-							console.log(text);
+							// console.log(text);
 							refreshTables();
 						})
 						.catch((error) => {
@@ -279,7 +293,7 @@
 					fetch('/admin/tables/clear')
 						.then((resp) => resp.text())
 						.then((text) => {
-							console.log(text);
+							// console.log(text);
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -297,7 +311,7 @@
 					fetch('/admin/tables/generate')
 						.then((resp) => resp.text())
 						.then((text) => {
-							console.log(text);
+							// console.log(text);
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -315,7 +329,7 @@
 					fetch('/admin/storage/delete')
 						.then((resp) => resp.text())
 						.then((text) => {
-							console.log(text);
+							// console.log(text);
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -333,7 +347,7 @@
 					fetch('/admin/notify')
 						.then((resp) => resp.text())
 						.then((text) => {
-							console.log(text);
+							// console.log(text);
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;

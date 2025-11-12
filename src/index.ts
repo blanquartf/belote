@@ -1,11 +1,12 @@
 import { MyDurableObject } from './durable';
 import { authenticate } from './helpers';
-import { User } from './user';
 
 export interface Env {
+	AUTHENTICATION: string;
 	ADMIN_USER: string;
 	ADMIN_PASSWORD: string;
 	PLAYERS: string;
+	belote_kv: KVNamespace;
 	MY_DURABLE_OBJECT: DurableObjectNamespace<MyDurableObject>;
 }
 
@@ -179,6 +180,12 @@ export default {
 			}
 
 			// ADMIN without username param
+			case '/admin/users': {
+				return authenticate(request, env, async () => {
+					const users = await stub.getUsers();
+					return new Response(users, success);
+				});
+			}
 			case '/admin/notify': {
 				return authenticate(request, env, async () => {
 					await stub.notifyAll('force notify all');

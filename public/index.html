@@ -81,18 +81,16 @@
 							ulTables.innerHTML = '';
 
 							const tables = JSON.parse(text);
-							console.log('Tables:', tables);
+							// console.log('Tables:', tables);
 
 							for (const [table, users] of Object.entries(tables)) {
 								const liTable = document.createElement('li');
-								liTable.innerText = table + ' (' + users.length + ' players)';
-								if (users.length == 5) {
-									liTable.innerText += ' : apprenez le Tarot a 5 :p';
-								}
 								const ulUsers = document.createElement('ul');
+								let readyUsers = 0;
 								for (const [username, user] of Object.entries(users)) {
 									const liUser = document.createElement('li');
 									if (user.ready) {
+										readyUsers++;
 										liUser.innerText = user.name + ' (ready)';
 										liUser.setAttribute('style', 'color: #006400');
 									} else {
@@ -106,6 +104,10 @@
 										found = true;
 									}
 									ulUsers.appendChild(liUser);
+								}
+								liTable.innerText = table + ' (' + readyUsers + ' / ' + users.length + ' ready)';
+								if (users.length == 5) {
+									liTable.innerText += ' : apprenez le Tarot a 5 :p';
 								}
 								liTable.appendChild(ulUsers);
 								ulTables.appendChild(liTable);

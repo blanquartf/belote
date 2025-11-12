@@ -1,4 +1,7 @@
 export async function authenticate(request: Request, env: Env, operation: () => Promise<Response>): Promise<Response> {
+	if (env.AUTHENTICATION == 'false') {
+		return await operation();
+	}
 	const mustLoginResponse = new Response('you need to login', {
 		status: 401,
 		headers: { 'WWW-Authenticate': 'Basic realm="my scope", charset="UTF-8"' },

@@ -31,9 +31,7 @@ export class User {
 	constructor(name: string, ip: string | undefined) {
 		this.name = name;
 		this.joinedAt = Date.now();
-		if (ip !== undefined) {
-			this.lastActiveAt = this.joinedAt;
-		}
+		this.lastActiveAt = this.joinedAt;
 		this.ip = ip;
 		this.ready = false;
 	}

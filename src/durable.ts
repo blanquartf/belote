@@ -78,58 +78,63 @@ export class MyDurableObject extends DurableObject<Env> {
 		await this.ctx.storage.put('tables', tables);
 		return 200;
 	}
-	async setUserReadyOrNot(username: string, ready: boolean, ip?: string): Promise<boolean> {
+	async setUserReadyOrNot(searchedUsername: string, ready: boolean, ip?: string): Promise<boolean> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		if (tables.size == 0) {
 			return false;
 		}
 
 		let found = false;
-		for (const [tableName, users] of tables) {
-			let user = users.get(username);
-			if (!user) {
-				continue;
+		outerLoop: for (const [tableName, users] of tables) {
+			innerLoop: for (const [username, user] of users) {
+				if (username != searchedUsername) {
+					continue innerLoop;
+				}
+				if (ip !== undefined && ip != user.ip) {
+					continue innerLoop;
+				}
+				console.log(`user ${user.name} found on table ${tableName}`);
+				found = true;
+				setReadyOrNot(user, ready);
+				if (ip !== undefined) {
+					setActivity(user);
+				}
+				break outerLoop;
 			}
-			if (ip !== undefined && ip != user.ip) {
-				continue;
-			}
-			console.log(`user ${user.name} found on table ${tableName}`);
-			found = true;
-			setReadyOrNot(user, ready);
-			if (ip !== undefined) {
-				setActivity(user);
-			}
-			break;
 		}
 		if (found) {
 			await this.ctx.storage.put('tables', tables);
 		}
 		return found;
 	}
-	async join(username: string, ip: string | undefined): Promise<boolean> {
-		const tables = ((await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>()) as Tables;
+	async join(newUsername: string, ip: string | undefined): Promise<boolean> {
+		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 
 		let existed = false;
-		for (const [username, users] of tables) {
-			const user = users.get(username);
-			if (user) {
-				setIp(user, ip);
+		outerLoop: for (const [tableName, users] of tables) {
+			innerLoop: for (const [username, user] of users) {
+				if (username != newUsername) {
+					continue innerLoop;
+				}
+				if (ip) {
+					setIp(user, ip);
+				}
 				existed = true;
-				break;
+				break outerLoop;
 			}
 		}
 
 		if (!existed) {
-			const user = new User(username, ip);
+			const user = new User(newUsername, ip);
 			let table = tables.get(DEFAULT_TABLE);
 			if (!table) {
 				table = new Map<string, User>();
 				tables.set(DEFAULT_TABLE, table);
 			}
-			table.set(username, user);
-			console.log(`User ${username} joined with IP ${ip}`);
+			table.set(newUsername, user);
+			console.log(`User ${newUsername} joined with IP ${ip}`);
 		} else {
-			console.log(`User ${username} already exists, updated last active time and IP`);
+			console.log(`User ${newUsername} already exists, updated last active time and maybe IP`);
 		}
 		await this.ctx.storage.put('tables', tables);
 		return !existed;
@@ -294,6 +299,15 @@ export class MyDurableObject extends DurableObject<Env> {
 	async getTables(): Promise<string> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		let pretty = JSON.stringify(Object.fromEntries(tables), replacer, 2);
+		return pretty;
+	}
+	async getUsers(): Promise<string> {
+		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		const allUsers: User[] = [];
+		for (const [_, users] of tables) {
+			allUsers.push(...users.values());
+		}
+		let pretty = JSON.stringify(allUsers, replacer, 2);
 		return pretty;
 	}
 	async notifyAll(reason: string) {
