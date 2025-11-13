@@ -15,32 +15,31 @@
 		<br /><br />
 		<button id="clear_tables" type="button">Clear Tables</button>
 		<br /><br />
-		<button id="storage_delete" type="button">Delete storage</button>
-		<br /><br />
+		<!-- <button id="storage_delete" type="button">Delete storage</button>
+		<br /><br /> -->
 		<button id="generate_tables" type="button">Distribute Tables</button>
+		<br /><br />
+		<button id="shuffle_tables" type="button">Reshuffle Tables</button>
 		<br /><br />
 		<button id="notify_all" type="button">Notify all</button>
 		<br /><br />
 		<ul id="tables"></ul>
 		<div id="messages">disconnected</div>
-		<a href="/public/tables">Dump tables</a>
-		<br />
-		<a href="/admin/users">Dump users</a>
-		<br />
-		<a href="/">Frontend</a>
-		<br />
+		<a href="/public/tables">Dump tables</a><br />
+		<a href="/admin/users">Dump users</a><br />
+		<a href="/">Frontend</a><br />
 		<script>
 			// @ts-check
 			(function () {
 				const messagesDiv = document.getElementById('messages');
 				if (!messagesDiv) {
-					console.log('messages element not found');
+					console.error('messages element not found');
 					return;
 				}
 
 				const ulTables = document.getElementById('tables');
 				if (!ulTables) {
-					console.log('tables element not found');
+					console.error('tables element not found');
 					return;
 				}
 
@@ -71,7 +70,7 @@
 
 						ws.onclose = () => {
 							const msg = 'Disconnected from Meltdown!';
-							console.log(msg);
+							console.warn(msg);
 							messagesDiv.innerHTML = msg;
 							ulTables.innerHTML = '';
 							setTimeout(connect, 1000);
@@ -89,7 +88,14 @@
 
 							const tables = JSON.parse(text);
 							// console.log('Tables:', tables);
-							for (const [table, users] of Object.entries(tables)) {
+							for (let [table, users] of Object.entries(tables)) {
+								users.sort((a, b) => {
+									if (!a.lastActiveAt && !b.lastActiveAt) {
+										return b.joinedAt - a.joinedAt;
+									}
+									return b.lastActiveAt - a.lastActiveAt;
+								});
+
 								const liTable = document.createElement('li');
 								const ulUsers = document.createElement('ul');
 								// console.log('Table:', table);
@@ -184,56 +190,60 @@
 								}
 								liTable.innerText = table + ' (' + readyUsers + ' / ' + users.length + ' players)';
 
-								const tableReadyButton = document.createElement('button');
-								tableReadyButton.innerText = 'Ready';
-								tableReadyButton.addEventListener('click', function (event) {
-									fetch('/admin/tables/ready?table=' + encodeURIComponent(table))
-										.then((resp) => resp.text())
-										.then((text) => {
-											// console.log(text);
-											refreshTables();
-										})
-										.catch((error) => {
-											const msg = 'Fetch error:' + error;
-											messagesDiv.innerHTML = msg;
-											console.error(msg);
-										});
-								});
-								liTable.appendChild(tableReadyButton);
+								if (users.length) {
+									const tableReadyButton = document.createElement('button');
+									tableReadyButton.innerText = 'All Ready';
+									tableReadyButton.addEventListener('click', function (event) {
+										fetch('/admin/tables/ready?table=' + encodeURIComponent(table))
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
+												refreshTables();
+											})
+											.catch((error) => {
+												const msg = 'Fetch error:' + error;
+												messagesDiv.innerHTML = msg;
+												console.error(msg);
+											});
+									});
+									liTable.appendChild(tableReadyButton);
 
-								const tableNotReadyButton = document.createElement('button');
-								tableNotReadyButton.innerText = 'Not Ready';
-								tableNotReadyButton.addEventListener('click', function (event) {
-									fetch('/admin/tables/notready?table=' + encodeURIComponent(table))
-										.then((resp) => resp.text())
-										.then((text) => {
-											// console.log(text);
-											refreshTables();
-										})
-										.catch((error) => {
-											const msg = 'Fetch error:' + error;
-											messagesDiv.innerHTML = msg;
-											console.error(msg);
-										});
-								});
-								liTable.appendChild(tableNotReadyButton);
+									const tableNotReadyButton = document.createElement('button');
+									tableNotReadyButton.innerText = 'All Not Ready';
+									tableNotReadyButton.addEventListener('click', function (event) {
+										fetch('/admin/tables/notready?table=' + encodeURIComponent(table))
+											.then((resp) => resp.text())
+											.then((text) => {
+												// console.log(text);
+												refreshTables();
+											})
+											.catch((error) => {
+												const msg = 'Fetch error:' + error;
+												messagesDiv.innerHTML = msg;
+												console.error(msg);
+											});
+									});
+									liTable.appendChild(tableNotReadyButton);
 
-								const tableDeleteButton = document.createElement('button');
-								tableDeleteButton.innerText = 'Delete';
-								tableDeleteButton.addEventListener('click', function (event) {
-									fetch('/admin/tables/delete?table=' + encodeURIComponent(table))
-										.then((resp) => resp.text())
-										.then((text) => {
-											// console.log(text);
-											refreshTables();
-										})
-										.catch((error) => {
-											const msg = 'Fetch error:' + error;
-											messagesDiv.innerHTML = msg;
-											console.error(msg);
+									if (table != 'panama') {
+										const tableDeleteButton = document.createElement('button');
+										tableDeleteButton.innerText = 'Delete';
+										tableDeleteButton.addEventListener('click', function (event) {
+											fetch('/admin/tables/delete?table=' + encodeURIComponent(table))
+												.then((resp) => resp.text())
+												.then((text) => {
+													// console.log(text);
+													refreshTables();
+												})
+												.catch((error) => {
+													const msg = 'Fetch error:' + error;
+													messagesDiv.innerHTML = msg;
+													console.error(msg);
+												});
 										});
-								});
-								liTable.appendChild(tableDeleteButton);
+										liTable.appendChild(tableDeleteButton);
+									}
+								}
 
 								liTable.appendChild(ulUsers);
 								ulTables.appendChild(liTable);
@@ -244,14 +254,14 @@
 
 				const joinForm = document.getElementById('join');
 				if (!joinForm) {
-					console.log('join element not found');
+					console.error('join element not found');
 					return;
 				}
 				joinForm.addEventListener('submit', function (event) {
 					event.preventDefault();
 					const usernameElem = document.getElementById('username');
 					if (!usernameElem) {
-						console.log('username element not found');
+						console.error('username element not found');
 						return;
 					}
 					const usernameInput = /** @type {HTMLInputElement} */ (usernameElem);
@@ -262,12 +272,17 @@
 						.then((text) => {
 							// console.log(text);
 							refreshTables();
+						})
+						.catch((error) => {
+							const msg = 'Fetch error:' + error;
+							messagesDiv.innerHTML = msg;
+							console.error(msg);
 						});
 				});
 
 				const loadFixturesButton = document.getElementById('load_fixtures');
 				if (!loadFixturesButton) {
-					console.log('load fixtures button not found');
+					console.error('load fixtures button not found');
 					return;
 				}
 				loadFixturesButton.addEventListener('click', function (event) {
@@ -286,7 +301,7 @@
 
 				const clearTablesButton = document.getElementById('clear_tables');
 				if (!clearTablesButton) {
-					console.log('clear tables button not found');
+					console.error('clear tables button not found');
 					return;
 				}
 				clearTablesButton.addEventListener('click', function (event) {
@@ -294,6 +309,7 @@
 						.then((resp) => resp.text())
 						.then((text) => {
 							// console.log(text);
+							refreshTables();
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -304,7 +320,7 @@
 
 				const generateTablesButton = document.getElementById('generate_tables');
 				if (!generateTablesButton) {
-					console.log('generate tables button not found');
+					console.error('generate tables button not found');
 					return;
 				}
 				generateTablesButton.addEventListener('click', function (event) {
@@ -312,6 +328,7 @@
 						.then((resp) => resp.text())
 						.then((text) => {
 							// console.log(text);
+							refreshTables();
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -320,16 +337,17 @@
 						});
 				});
 
-				const deleteStorageButton = document.getElementById('storage_delete');
-				if (!deleteStorageButton) {
-					console.log('delete storage button not found');
+				const shuffleTablesButton = document.getElementById('shuffle_tables');
+				if (!shuffleTablesButton) {
+					console.error('shuffle tables button not found');
 					return;
 				}
-				deleteStorageButton.addEventListener('click', function (event) {
-					fetch('/admin/storage/delete')
+				shuffleTablesButton.addEventListener('click', function (event) {
+					fetch('/admin/tables/shuffle')
 						.then((resp) => resp.text())
 						.then((text) => {
 							// console.log(text);
+							refreshTables();
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;
@@ -338,9 +356,28 @@
 						});
 				});
 
+				// const deleteStorageButton = document.getElementById('storage_delete');
+				// if (!deleteStorageButton) {
+				// 	console.error('delete storage button not found');
+				// 	return;
+				// }
+				// deleteStorageButton.addEventListener('click', function (event) {
+				// 	fetch('/admin/storage/delete')
+				// 		.then((resp) => resp.text())
+				// 		.then((text) => {
+				// 			// console.log(text);
+				// 			refreshTables();
+				// 		})
+				// 		.catch((error) => {
+				// 			const msg = 'Fetch error:' + error;
+				// 			messagesDiv.innerHTML = msg;
+				// 			console.error(msg);
+				// 		});
+				// });
+
 				const notifyAllButton = document.getElementById('notify_all');
 				if (!notifyAllButton) {
-					console.log('notify all button not found');
+					console.error('notify all button not found');
 					return;
 				}
 				notifyAllButton.addEventListener('click', function (event) {
@@ -348,6 +385,7 @@
 						.then((resp) => resp.text())
 						.then((text) => {
 							// console.log(text);
+							refreshTables();
 						})
 						.catch((error) => {
 							const msg = 'Fetch error:' + error;

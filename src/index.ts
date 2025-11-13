@@ -6,7 +6,6 @@ export interface Env {
 	ADMIN_USER: string;
 	ADMIN_PASSWORD: string;
 	PLAYERS: string;
-	belote_kv: KVNamespace;
 	MY_DURABLE_OBJECT: DurableObjectNamespace<MyDurableObject>;
 }
 
@@ -18,7 +17,6 @@ const success = {
 	},
 };
 const IP_HEADER = 'CF-Connecting-IP';
-
 export { MyDurableObject };
 
 export default {
@@ -209,7 +207,7 @@ export default {
 						return new Response('missing table name', { status: 400 });
 					}
 					console.log(table);
-					const deleted = await stub.tableDelete(table);
+					const deleted = await stub.adminDeleteTable(table);
 					if (!deleted) {
 						return unchanged;
 					}
@@ -224,7 +222,7 @@ export default {
 						return new Response('missing table name', { status: 400 });
 					}
 					console.log(table);
-					const notReady = await stub.tableNotReady(table);
+					const notReady = await stub.adminTableNotReady(table);
 					if (!notReady) {
 						return unchanged;
 					}
@@ -239,7 +237,7 @@ export default {
 						return new Response('missing table name', { status: 400 });
 					}
 					console.log(table);
-					const ready = await stub.tableReady(table);
+					const ready = await stub.adminTableReady(table);
 					if (!ready) {
 						return unchanged;
 					}
@@ -249,7 +247,7 @@ export default {
 			}
 			case '/admin/tables/clear': {
 				return authenticate(request, env, async () => {
-					if (await stub.deleteTables()) {
+					if (await stub.adminDeleteAllTables()) {
 						await stub.notifyAll(`tables cleared`);
 					}
 					return new Response('🎉 Tables cleared', success);
@@ -257,10 +255,18 @@ export default {
 			}
 			case '/admin/tables/generate': {
 				return authenticate(request, env, async () => {
-					if (await stub.generateTables()) {
+					if (await stub.adminGenerateTables()) {
 						await stub.notifyAll(`tables generated`);
 					}
 					return new Response('🎉 New tables generated', success);
+				});
+			}
+			case '/admin/tables/shuffle': {
+				return authenticate(request, env, async () => {
+					if (await stub.adminShuffleTables()) {
+						await stub.notifyAll(`tables shuffled`);
+					}
+					return new Response('🎉 Tables shuffled', success);
 				});
 			}
 			case '/admin/meltdown': {
@@ -270,15 +276,15 @@ export default {
 					return response;
 				});
 			}
-			case '/admin/storage/delete': {
-				return authenticate(request, env, async () => {
-					await stub.clearDo();
-					await stub.notifyAll('users deleted');
-					return new Response('🎉 All users cleared!', success);
-				});
-			}
+			// case '/admin/storage/delete': {
+			// 	return authenticate(request, env, async () => {
+			// 		await stub.clearDo();
+			// 		await stub.notifyAll('users deleted');
+			// 		return new Response('🎉 All users cleared!', success);
+			// 	});
+			// }
 			default:
-				return new Response('not Found', { status: 404 });
+				return new Response('not found', { status: 404 });
 		}
 	},
 } satisfies ExportedHandler<Env>;

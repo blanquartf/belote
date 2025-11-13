@@ -139,7 +139,9 @@ export class MyDurableObject extends DurableObject<Env> {
 		await this.ctx.storage.put('tables', tables);
 		return !existed;
 	}
-	async tableReady(tableName: string): Promise<boolean> {
+
+	// for admin exclusively
+	async adminTableReady(tableName: string): Promise<boolean> {
 		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		if (tables.size == 0) {
 			return false;
@@ -164,7 +166,7 @@ export class MyDurableObject extends DurableObject<Env> {
 		}
 		return ready;
 	}
-	async tableNotReady(tableName: string): Promise<boolean> {
+	async adminTableNotReady(tableName: string): Promise<boolean> {
 		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		if (tables.size == 0) {
 			return false;
@@ -189,38 +191,7 @@ export class MyDurableObject extends DurableObject<Env> {
 		}
 		return notReady;
 	}
-	async tableDelete(tableName: string): Promise<boolean> {
-		if (tableName == DEFAULT_TABLE) {
-			return false;
-		}
-		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
-		if (tables.size == 0) {
-			return false;
-		}
-
-		const table = tables.get(tableName);
-		if (!table) {
-			return false;
-		}
-
-		const panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
-		for (const [username, user] of table) {
-			panamaTable.set(username, user);
-		}
-
-		tables.delete(tableName);
-		await this.ctx.storage.put('tables', tables);
-		return true;
-	}
-	async deleteTables(): Promise<boolean> {
-		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
-		if (tables.size == 0) {
-			return false;
-		}
-		await this.ctx.storage.delete('tables');
-		return true;
-	}
-	async generateTables(): Promise<boolean> {
+	async adminGenerateTables(): Promise<boolean> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		if (tables.size == 0) {
 			return false;
@@ -290,9 +261,61 @@ export class MyDurableObject extends DurableObject<Env> {
 		await this.ctx.storage.put('tables', tables);
 		return true;
 	}
-	async clearDo(): Promise<void> {
-		await this.ctx.storage.deleteAlarm();
-		await this.ctx.storage.deleteAll();
+	async adminShuffleTables(): Promise<boolean> {
+		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		if (tables.size == 0) {
+			return false;
+		}
+
+		let panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
+
+		// move all ready to panama
+		for (const [tableName, table] of tables) {
+			if (tableName == DEFAULT_TABLE) {
+				continue;
+			}
+			for (const [username, user] of table) {
+				table.delete(username);
+				panamaTable.set(username, user);
+			}
+			tables.delete(tableName);
+		}
+
+		await this.ctx.storage.put('tables', tables);
+
+		// regenerate
+		return await this.adminGenerateTables();
+	}
+	async adminDeleteAllTables(): Promise<boolean> {
+		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		if (tables.size == 0) {
+			return false;
+		}
+		await this.ctx.storage.delete('tables');
+		return true;
+	}
+	async adminDeleteTable(tableName: string): Promise<boolean> {
+		if (tableName == DEFAULT_TABLE) {
+			return false;
+		}
+		const tables: Tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
+		if (tables.size == 0) {
+			return false;
+		}
+
+		const table = tables.get(tableName);
+		if (!table) {
+			return false;
+		}
+
+		const panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
+		for (const [username, user] of table) {
+			panamaTable.set(username, user);
+		}
+
+		tables.delete(tableName);
+		await this.ctx.storage.put('tables', tables);
+		return true;
 	}
 
 	// no modifying
@@ -326,4 +349,8 @@ export class MyDurableObject extends DurableObject<Env> {
 			webSocket: client,
 		});
 	}
+	// async clearDo(): Promise<void> {
+	// 	await this.ctx.storage.deleteAlarm();
+	// 	await this.ctx.storage.deleteAll();
+	// }
 }

@@ -16,25 +16,43 @@
 
 		<ul id="tables"></ul>
 		<div id="messages">disconnected</div>
-		<a href="/help">Aide</a>
-		<br />
-		<a href="/valeurs.webp">Valeur des cartes</a>
-		<br />
+		<a href="/help">Aide</a><br />
+		<a href="/valeurs.webp">Valeur des cartes</a><br />
 		<a href="/backend">Backend</a>
 		<script>
 			// @ts-check
 			(function () {
 				const messagesDiv = document.getElementById('messages');
 				if (!messagesDiv) {
-					console.log('messages element not found');
+					console.error('messages element not found');
 					return;
 				}
 
 				const ulTables = document.getElementById('tables');
 				if (!ulTables) {
-					console.log('tables element not found');
+					console.error('tables element not found');
 					return;
 				}
+
+				const joinButton = document.getElementById('join_button');
+				if (!joinButton) {
+					console.error('join_button button not found');
+					return;
+				}
+				const joinButtonInput = /** @type {HTMLInputElement} */ (joinButton);
+
+				const connectedDiv = document.getElementById('connected');
+				if (!connectedDiv) {
+					console.error('connected element not found');
+					return;
+				}
+
+				const usernameElem = document.getElementById('username');
+				if (!usernameElem) {
+					console.error('username element not found');
+					return;
+				}
+				const usernameInput = /** @type {HTMLInputElement} */ (usernameElem);
 
 				const connectWebsocket = (username) => {
 					const hostname = window.location.host;
@@ -62,7 +80,7 @@
 
 						ws.onclose = () => {
 							const msg = 'Disconnected from Meltdown!';
-							console.log(msg);
+							console.warn(msg);
 							messagesDiv.innerHTML = msg;
 							ulTables.innerHTML = '';
 							setTimeout(connect, 1000);
@@ -114,38 +132,14 @@
 							}
 
 							if (!found) {
-								const joinButton = document.getElementById('join_button');
-								if (!joinButton) {
-									console.log('join_button button not found');
-									return;
-								}
-								const joinButtonInput = /** @type {HTMLInputElement} */ (joinButton);
 								joinButtonInput.disabled = false;
-								localStorage.removeItem('username');
-
-								const connectedDiv = document.getElementById('connected');
-								if (!connectedDiv) {
-									console.log('connected element not found');
-									return;
-								}
 								connectedDiv.innerHTML = '';
+								localStorage.removeItem('username');
 							}
 						});
 
 				const connectedUser = (username) => {
-					const joinButton = document.getElementById('join_button');
-					if (!joinButton) {
-						console.log('join_button button not found');
-						return;
-					}
-					const joinButtonInput = /** @type {HTMLInputElement} */ (joinButton);
 					joinButtonInput.disabled = true;
-
-					const connectedDiv = document.getElementById('connected');
-					if (!connectedDiv) {
-						console.log('connected element not found');
-						return;
-					}
 					connectedDiv.innerHTML = '';
 
 					const quitButton = document.createElement('button');
@@ -199,12 +193,6 @@
 				const username = localStorage.getItem('username');
 				if (username) {
 					console.log(`user already set: ${username}`);
-					const usernameElem = document.getElementById('username');
-					if (!usernameElem) {
-						console.log('username element not found');
-						return;
-					}
-					const usernameInput = /** @type {HTMLInputElement} */ (usernameElem);
 					usernameInput.value = username;
 					connectedUser(username);
 					connectWebsocket(username);
@@ -212,17 +200,11 @@
 
 				const joinForm = document.getElementById('join');
 				if (!joinForm) {
-					console.log('join element not found');
+					console.error('join element not found');
 					return;
 				}
 				joinForm.addEventListener('submit', function (event) {
 					event.preventDefault();
-					const usernameElem = document.getElementById('username');
-					if (!usernameElem) {
-						console.log('username element not found');
-						return;
-					}
-					const usernameInput = /** @type {HTMLInputElement} */ (usernameElem);
 					const username = usernameInput.value;
 
 					fetch('/me/join?username=' + encodeURIComponent(username))

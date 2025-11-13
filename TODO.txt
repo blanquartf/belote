@@ -1,7 +1,3 @@
-- use SSE?
-- use actors?
-- users backup
-- reshuffle existing tables
 - user capacity : 
     - belote
     - coinche
