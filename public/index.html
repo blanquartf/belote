@@ -102,6 +102,27 @@
 							// console.log('Tables:', tables);
 
 							for (const [table, users] of Object.entries(tables)) {
+								users.sort((a, b) => {
+									if (!a.ready || !b.ready) {
+										if (a.ready && !b.ready) {
+											return -1;
+										}
+										if (!a.ready && b.ready) {
+											return 1;
+										}
+									}
+									if (!a.lastActiveAt && !b.lastActiveAt) {
+										return 0;
+									}
+									if (!a.lastActiveAt) {
+										return 1;
+									}
+									if (!b.lastActiveAt) {
+										return -1;
+									}
+									return b.lastActiveAt - a.lastActiveAt;
+								});
+
 								const liTable = document.createElement('li');
 								const ulUsers = document.createElement('ul');
 								let readyUsers = 0;
