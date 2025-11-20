@@ -330,13 +330,6 @@ export default {
 					return response;
 				});
 			}
-			case '/admin/storage/delete': {
-				return authenticate(request, env, async () => {
-					await stub.clearDo();
-					await stub.notifyAll('users deleted');
-					return new Response(JSON.stringify({ message: `🎉 All users cleared!` }), success);
-				});
-			}
 			default:
 				return new Response(JSON.stringify({ message: 'not Found' }), { status: 404 });
 		}
