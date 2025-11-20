@@ -12,9 +12,16 @@
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.8.19",
 		"@types/node": "^24.9.2",
+		"drizzle-kit": "^0.31.7",
 		"eslint": "^9.39.1",
 		"typescript": "^5.5.2",
 		"vitest": "~3.2.0",
 		"wrangler": "^4.49.0"
+	},
+	"dependencies": {
+		"bcrypt": "^6.0.0",
+		"bluebird": "^3.7.2",
+		"drizzle-orm": "^0.44.7",
+		"uuid": "^13.0.0"
 	}
 }
