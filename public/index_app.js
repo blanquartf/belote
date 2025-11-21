@@ -96,7 +96,6 @@ angular.module('meltdownApp', [])
           const usersList = Object.values(users).map(user => ({
             name: user.name,
             ready: user.ready,
-            ip: user.ip,
             canPlayTarot: user.canPlayTarot,
             canPlayTwoTables: user.canPlayTwoTables,
             teams: user.teams

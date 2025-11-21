@@ -16,7 +16,7 @@ type Sessions = Map<WebSocket, { [key: string]: string }>;
 const DEFAULT_TABLE = 'panama';
 type Table = Map<string, User>;
 type Tables = Map<string, Table>;
-const colors = ["red", "black", "orange", "blue"]
+const colors = ['red', 'black', 'orange', 'blue'];
 
 export class MyDurableObject extends DurableObject<Env> {
 	sessions: Sessions;
@@ -304,12 +304,13 @@ export class MyDurableObject extends DurableObject<Env> {
 		};
 		// Index 0 for 4,Index 1 for 5,Index 2 for 6,Index 3 for 7,
 		let maxAllocationPossible = [
-			Math.floor(users.length/4),
+			Math.floor(users.length / 4),
 			//Maximum de nombre de tables qui peuvent jouer au tarot
-			Math.floor(users.filter((user) => user.canPlayTarot).length/5),
-			Math.floor(users.length/6),
+			Math.floor(users.filter((user) => user.canPlayTarot).length / 5),
+			Math.floor(users.length / 6),
 			//Maximum de nombre de tables ayant un joueur qui peut jouer sur deux tables
-			users.filter((user) => user.canPlayTwoTables).length];
+			users.filter((user) => user.canPlayTwoTables).length,
+		];
 		let candidates = [];
 		for (let t4 = 0; t4 <= maxAllocationPossible[0]; t4++) {
 			for (let t5 = 0; t5 <= maxAllocationPossible[1]; t5++) {
@@ -323,60 +324,64 @@ export class MyDurableObject extends DurableObject<Env> {
 				}
 			}
 		}
-		if (candidates.length===0) {
+		if (candidates.length === 0) {
 			assignTable(DEFAULT_TABLE, users);
 		}
 
-		const usedPlayers = (p: number[]): number  =>{
+		const usedPlayers = (p: number[]): number => {
 			return p[0] * 4 + p[1] * 5 + p[2] * 6 + p[3] * 7;
-		}
+		};
 
-		const combinationsWithNumberMatchingTotalParticipants = candidates.filter(combination => usedPlayers(combination) === users.length);
+		const combinationsWithNumberMatchingTotalParticipants = candidates.filter((combination) => usedPlayers(combination) === users.length);
 		let bestCombinationPossible: number[] = [];
 		let currentPlayers = users;
 		if (combinationsWithNumberMatchingTotalParticipants.length != 0) {
 			//We find the one that max the number of tables of 4
-			const maxT4 = Math.max(...combinationsWithNumberMatchingTotalParticipants.map(combination => combination[0]));
-			bestCombinationPossible = combinationsWithNumberMatchingTotalParticipants.filter(combination => combination[0] === maxT4)[0];
+			const maxT4 = Math.max(...combinationsWithNumberMatchingTotalParticipants.map((combination) => combination[0]));
+			bestCombinationPossible = combinationsWithNumberMatchingTotalParticipants.filter((combination) => combination[0] === maxT4)[0];
 		} else {
-			//We try to find the combinations that maxes the number of participants 
+			//We try to find the combinations that maxes the number of participants
 			let secondBestCombinationParticipantNumber = users.length;
 			let secondBestCombinations = [];
 			do {
 				secondBestCombinationParticipantNumber--;
-				secondBestCombinations = candidates.filter(combination => usedPlayers(combination) === secondBestCombinationParticipantNumber);
-			} while(secondBestCombinations.length == 0)
+				secondBestCombinations = candidates.filter((combination) => usedPlayers(combination) === secondBestCombinationParticipantNumber);
+			} while (secondBestCombinations.length == 0);
 			//Maximize number of tables of 4
-			const maxT4 = Math.max(...secondBestCombinations.map(combination => combination[0]));
-			bestCombinationPossible = secondBestCombinations.filter(combination => combination[0] === maxT4)[0];
+			const maxT4 = Math.max(...secondBestCombinations.map((combination) => combination[0]));
+			bestCombinationPossible = secondBestCombinations.filter((combination) => combination[0] === maxT4)[0];
 
 			//Now we assign the players that would be left to Panama...
 			let currentPlayersThatDontTarotOrSeven = currentPlayers.filter((user) => !user.canPlayTarot && !user.canPlayTwoTables);
 			let numberOfPlayersToGoToPanama = currentPlayers.length - secondBestCombinationParticipantNumber;
 			let playersSelected = [];
 			if (currentPlayersThatDontTarotOrSeven.length >= numberOfPlayersToGoToPanama) {
-				playersSelected = currentPlayersThatDontTarotOrSeven.slice(0,numberOfPlayersToGoToPanama);
+				playersSelected = currentPlayersThatDontTarotOrSeven.slice(0, numberOfPlayersToGoToPanama);
 			} else {
-				playersSelected = currentPlayers.filter((user) => (!user.canPlayTarot || bestCombinationPossible[1] == 0) && (!user.canPlayTwoTables || bestCombinationPossible[3] == 0)).slice(0,numberOfPlayersToGoToPanama);
+				playersSelected = currentPlayers
+					.filter(
+						(user) => (!user.canPlayTarot || bestCombinationPossible[1] == 0) && (!user.canPlayTwoTables || bestCombinationPossible[3] == 0)
+					)
+					.slice(0, numberOfPlayersToGoToPanama);
 			}
 			assignTable(DEFAULT_TABLE, playersSelected);
 			currentPlayers = currentPlayers.filter((user) => !playersSelected.find((userSelected) => userSelected.name === user.name));
 		}
 
 		//Tarot is priority
-		while(currentPlayers.length!=0) {
+		while (currentPlayers.length != 0) {
 			var nextTableAvailable = 1;
 			while (tables.get(`Table ${nextTableAvailable}`)) {
-				nextTableAvailable ++;
+				nextTableAvailable++;
 			}
 			let playersSelected: User[] = [];
 			// 5 priority for tarot
-			if (bestCombinationPossible[1]!=0) {
+			if (bestCombinationPossible[1] != 0) {
 				playersSelected = currentPlayers.filter((user) => user.canPlayTarot).splice(0, 5);
 				bestCombinationPossible[1]--;
 			} else {
 				// 7 priority for users playing two tables
-				if (bestCombinationPossible[3]!=0) {
+				if (bestCombinationPossible[3] != 0) {
 					let usersThanCanPlayTwoTables = currentPlayers.filter((user) => user.canPlayTwoTables);
 					playersSelected = [
 						usersThanCanPlayTwoTables[0],
@@ -384,7 +389,7 @@ export class MyDurableObject extends DurableObject<Env> {
 					];
 					bestCombinationPossible[3]--;
 				} else {
-					if (bestCombinationPossible[0] !=0) {
+					if (bestCombinationPossible[0] != 0) {
 						playersSelected = currentPlayers.splice(0, 4);
 						bestCombinationPossible[0]--;
 					} else {
@@ -395,32 +400,39 @@ export class MyDurableObject extends DurableObject<Env> {
 			}
 			var nextTableAvailable = 1;
 			while (tables.get(`Table ${nextTableAvailable}`)) {
-				nextTableAvailable ++;
+				nextTableAvailable++;
 			}
 			if (playersSelected.length != 5) {
-				let colorsNeeded = Math.ceil(playersSelected.length /2);
+				let colorsNeeded = Math.ceil(playersSelected.length / 2);
 				for (let index = 0; index < playersSelected.length; index++) {
-					playersSelected[index].teams.push(colors[index%colorsNeeded]);
+					playersSelected[index].teams.push(colors[index % colorsNeeded]);
 				}
 				if (playersSelected.length === 7) {
 					playersSelected[0].teams.push(colors[3]);
 				}
 			}
-			
+
 			assignTable(`Table ${nextTableAvailable}`, playersSelected);
-			currentPlayers = currentPlayers.filter((user) => !playersSelected.find((userSelected) => userSelected.name === user.name))
+			currentPlayers = currentPlayers.filter((user) => !playersSelected.find((userSelected) => userSelected.name === user.name));
 		}
 	}
 
 	async adminShuffleTables(): Promise<boolean> {
+		// clear all tables
+		if (!(await this.adminClearAllTables())) {
+			return false;
+		}
+
+		// regenerate
+		return await this.adminGenerateTables();
+	}
+	async adminClearAllTables(): Promise<boolean> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		if (tables.size == 0) {
 			return false;
 		}
 
-		let panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
-
-		// move all ready to panama
+		const panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
 		for (const [tableName, table] of tables) {
 			if (tableName == DEFAULT_TABLE) {
 				continue;
@@ -433,16 +445,6 @@ export class MyDurableObject extends DurableObject<Env> {
 		}
 
 		await this.ctx.storage.put('tables', tables);
-
-		// regenerate
-		return await this.adminGenerateTables();
-	}
-	async adminDeleteAllTables(): Promise<boolean> {
-		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
-		if (tables.size == 0) {
-			return false;
-		}
-		await this.ctx.storage.delete('tables');
 		return true;
 	}
 	async adminDeleteTable(tableName: string): Promise<boolean> {
@@ -473,20 +475,20 @@ export class MyDurableObject extends DurableObject<Env> {
 	async getTables(): Promise<string> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
 		let entries = Object.fromEntries(tables);
-		entries = Object.keys(entries).sort((table1,table2) => {
-			if (table1===DEFAULT_TABLE) {
-				return -1;
-			}
-			if (table2===DEFAULT_TABLE) {
-				return 1;
-			}
-			return table1.localeCompare(table2);
-		}).reduce(
-			(obj, key) => {
-				obj[key] = entries[key]; 
+		entries = Object.keys(entries)
+			.sort((table1, table2) => {
+				if (table1 === DEFAULT_TABLE) {
+					return -1;
+				}
+				if (table2 === DEFAULT_TABLE) {
+					return 1;
+				}
+				return table1.localeCompare(table2);
+			})
+			.reduce((obj, key) => {
+				obj[key] = entries[key];
 				return obj;
-			}, {} as Record<string, typeof entries[keyof typeof entries]>
-		);
+			}, {} as Record<string, (typeof entries)[keyof typeof entries]>);
 		const pretty = JSON.stringify(entries, replacer, 2);
 		return pretty;
 	}
@@ -515,8 +517,8 @@ export class MyDurableObject extends DurableObject<Env> {
 			webSocket: client,
 		});
 	}
-	 async clearDo(): Promise<void> {
-	 	await this.ctx.storage.deleteAlarm();
-	 	await this.ctx.storage.deleteAll();
-	 }
+	async clearDo(): Promise<void> {
+		await this.ctx.storage.deleteAlarm();
+		await this.ctx.storage.deleteAll();
+	}
 }

@@ -316,7 +316,7 @@ export default {
 			}
 			case '/admin/tables/clear': {
 				return authenticate(request, env, async () => {
-					if (await stub.adminDeleteAllTables()) {
+					if (await stub.adminClearAllTables()) {
 						await stub.notifyAll(`tables cleared`);
 					}
 					return new Response(JSON.stringify({ message: `🎉 Tables cleared` }), success);

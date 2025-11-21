@@ -32,7 +32,6 @@
 					<thead>
 						<tr>
 							<th>Username</th>
-							<th>IP</th>
 							<th>Tarot</th>
 							<th>Two tables</th>
 							<th>Ready</th>
@@ -44,11 +43,10 @@
 							<td ng-class="{'username_cell': user.name === ctrl.username}">
 								{{user.name}}<span ng-if="user.name === ctrl.username"> (you)</span>
 							</td>
-							<td>{{user.ip ? 'connected' : 'added by admin'}}</td>
 							<td>{{user.canPlayTarot ? '✅' : '❌'}}</td>
 							<td>{{user.canPlayTwoTables ? '✅' : '❌'}}</td>
 							<td>{{user.ready ? '✅' : '❌'}}</td>
-							<td><span ng-repeat="team in user.teams" ng-style="{ color: team }" style="margin-right:3px">{{team}}</span></td>
+							<td><span ng-repeat="team in user.teams" ng-style="{ color: team }" style="margin-right: 3px">{{team}}</span></td>
 						</tr>
 					</tbody>
 				</table>
