@@ -97,9 +97,9 @@ export default {
 				const join = await stub.join(username, ip);
 				if (join) {
 					await stub.notifyAll(`user ${username} joined the Meltdown`);
-					return new Response(JSON.stringify({ message: `🎉 User ${username} joined!` }), success);
+					return new Response(JSON.stringify({ message: `🎉 New user ${username} joined!` }), success);
 				}
-				return unchanged;
+				return new Response(JSON.stringify({ message: `🎉 User ${username} already existed!` }), success);
 			}
 			case '/me/meltdown': {
 				if (!username) {
