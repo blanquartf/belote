@@ -27,10 +27,6 @@ export class MyDurableObject extends DurableObject<Env> {
 	}
 	async finish(username: string, ip?: string): Promise<number> {
 		const tables = (await this.ctx.storage.get<Tables>('tables')) || new Map<string, Table>();
-		if (tables.size == 0) {
-			return 304;
-		}
-
 		let panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
 		let foundUserTable: UserAndTable | undefined;
 

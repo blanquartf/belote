@@ -25,8 +25,6 @@ export default {
 		const internalError = new Response(JSON.stringify({ message: `internal error` }), { status: 500 });
 		const unauthorizedError = new Response(JSON.stringify({ message: `unauthorized` }), { status: 401 });
 		const missingUsername = new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
-		// unchanged body MUST be null
-		const unchanged = new Response(null, { status: 304 });
 		const ip = request.headers.get(IP_HEADER) || 'unknown';
 		const username = url.searchParams.get('username');
 		const userReady = (username: string): string => {
@@ -131,8 +129,6 @@ export default {
 						return unauthorizedError;
 					case 404:
 						return new Response(JSON.stringify({ message: `User ${username} not found` }), { status: 404 });
-					case 304:
-						return unchanged;
 					case 200:
 						await stub.notifyAll(`user ${username} and its friends at the same table finished their game`);
 						return new Response(JSON.stringify({ message: `🎉 User ${username} moved!` }), success);
@@ -152,7 +148,7 @@ export default {
 						await stub.notifyAll(`user ${username} joined`);
 						return new Response(JSON.stringify({ message: `🎉 User ${username} joined!` }), success);
 					}
-					return unchanged;
+					return new Response(JSON.stringify({ message: `🎉 User ${username} already existed!` }), success);
 				});
 			}
 			case '/admin/users/toggleCanPlayTarot': {
@@ -235,8 +231,6 @@ export default {
 					switch (code) {
 						case 404:
 							return new Response(JSON.stringify({ message: `User ${username} not found` }), { status: 404 });
-						case 304:
-							return unchanged;
 						case 200:
 							await stub.notifyAll(`user ${username} finished its game`);
 							return new Response(JSON.stringify({ message: `🎉 User ${username} finished its game!` }), success);
@@ -278,7 +272,7 @@ export default {
 					console.log(table);
 					const deleted = await stub.adminDeleteTable(table);
 					if (!deleted) {
-						return unchanged;
+						return new Response(JSON.stringify({ message: `table was NOT deleted!` }), success);
 					}
 					await stub.notifyAll('table deleted');
 					return new Response(JSON.stringify({ message: `🎉 table deleted!` }), success);
@@ -293,7 +287,7 @@ export default {
 					console.log(table);
 					const notReady = await stub.adminTableNotReady(table);
 					if (!notReady) {
-						return unchanged;
+						return new Response(JSON.stringify({ message: `table WAS NOT ready!` }), success);
 					}
 					await stub.notifyAll('table not ready');
 					return new Response(JSON.stringify({ message: `🎉 table not ready!` }), success);
@@ -308,7 +302,7 @@ export default {
 					console.log(table);
 					const ready = await stub.adminTableReady(table);
 					if (!ready) {
-						return unchanged;
+						return new Response(JSON.stringify({ message: `table WAS ready!` }), success);
 					}
 					await stub.notifyAll('table ready');
 					return new Response(JSON.stringify({ message: `🎉 table ready!` }), success);
