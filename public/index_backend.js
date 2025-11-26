@@ -61,8 +61,8 @@
 			};
 
 			vm.join = function () {
-				if (!vm.username) return;
-				$http.get('/admin/users/join?username=' + encodeURIComponent(vm.username))
+				if (!vm.username.trim()) return;
+				$http.get('/admin/users/join?username=' + encodeURIComponent(vm.username.trim()))
 					.then(function () { vm.refreshTables(); })
 			};
 

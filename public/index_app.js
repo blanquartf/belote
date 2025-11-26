@@ -1,7 +1,7 @@
 angular.module('meltdownApp', [])
   .controller('MainController', ['$http', '$timeout', function ($http, $timeout) {
     const vm = this;
-    vm.username = localStorage.getItem('username') || '';
+    vm.username = (localStorage.getItem('username') || '').trim();
     if (vm.username) {
       vm.usernameInput = vm.username;
     }
@@ -20,8 +20,8 @@ angular.module('meltdownApp', [])
         },
         responseType: 'text'
       }).then(response => {
-        localStorage.setItem('username', vm.usernameInput);
-        vm.username = vm.usernameInput;
+        localStorage.setItem('username', vm.usernameInput.trim());
+        vm.username = vm.usernameInput.trim();
         vm.joinDisabled = true;
         vm.connected = true;
         vm.connectWebsocket();
