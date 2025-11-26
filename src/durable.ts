@@ -42,6 +42,7 @@ export class MyDurableObject extends DurableObject<Env> {
 
 				if (tableName != DEFAULT_TABLE) {
 					setNotReady(user);
+					user.teams = [];
 					users.delete(username);
 					panamaTable.set(username, user);
 				}
@@ -63,6 +64,7 @@ export class MyDurableObject extends DurableObject<Env> {
 		if (oldTable) {
 			for (let user of oldTable.values()) {
 				setNotReady(user);
+				user.teams = [];
 				panamaTable.set(user.name, user);
 			}
 			tables.set(DEFAULT_TABLE, panamaTable);
@@ -315,6 +317,7 @@ export class MyDurableObject extends DurableObject<Env> {
 
 		const panamaTable = tables.get(DEFAULT_TABLE) || new Map<string, User>();
 		for (const [username, user] of table) {
+			user.teams = [];
 			panamaTable.set(username, user);
 		}
 
