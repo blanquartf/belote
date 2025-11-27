@@ -1,10 +1,11 @@
 import { DurableObject } from 'cloudflare:workers';
-import { replacer, shuffleArray } from './helpers';
 import { FullTable, User } from './db/schema.types';
 import { drizzle, type DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
-import * as schema from "./db/schema";
 import { GameService } from './services/GameService';
 import { UserService } from './services/UserService';
+import { migrate } from 'drizzle-orm/durable-sqlite/migrator';
+import migrations from '../drizzle/migrations';
+import * as schema from './db/schema';
 
 type Sessions = Map<WebSocket, { [key: string]: string }>;
 
@@ -17,10 +18,16 @@ export class MyDurableObject extends DurableObject<Env> {
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 		this.storage = ctx.storage;
-    	this.db = drizzle(this.storage, { logger: false });
+    	this.db = drizzle(this.storage, { schema, logger: false });
 		this.sessions = new Map<WebSocket, { [key: string]: string }>();
 		this.gameService = new GameService(this.db);
 		this.userService = new UserService(this.db);
+		ctx.blockConcurrencyWhile(async () => {
+			await this._migrate();
+		});
+	}
+	async _migrate() {
+		await migrate(this.db, migrations);
 	}
 	
 	async passwordChange(request: Request, user:User): Promise<Response> {

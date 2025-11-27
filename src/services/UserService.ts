@@ -72,7 +72,7 @@ export class UserService {
             .from(users)
             .where(eq(users.pseudo, pseudo)).get();
 
-        if (!userResult || !await bcrypt.compare(password,userResult.password)) {
+        if (!userResult || !await compare(password,userResult.password!!)) {
             return undefined;
         }
 

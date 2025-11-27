@@ -5,6 +5,10 @@
 			vm.messages = 'disconnected';
 			vm.tables = {};
 			vm.username = '';
+			vm.token = (localStorage.getItem('token') || '').trim();
+			if (!vm.token) {
+				window.location.href='/login';
+			}
 
 			vm.refreshTables = function () {
 				return $http.get('/public/tables')

@@ -21,6 +21,7 @@ export default {
 		if (!stub) {
 			return new Response(JSON.stringify({ message: 'Durable Object not found' }), { status: 500 });
 		}
+		console.log(url.pathname);
 		if (url.pathname==='/auth') {
 			return stub.authenticate(request);
 		}

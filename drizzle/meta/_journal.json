@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1764211329679,
+      "tag": "0000_wakeful_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1764211815748,
+      "tag": "0001_seed-users",
+      "breakpoints": true
+    }
+  ]
+}

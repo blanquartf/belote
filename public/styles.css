@@ -230,6 +230,33 @@ input[type="text"]:disabled {
 	opacity: 0.5;
 }
 
+input[type="password"] {
+	width: 100%;
+	padding: 14px 18px;
+	margin-bottom: 20px;
+	background: var(--surface-dark);
+	border: 2px solid var(--border-color);
+	border-radius: var(--border-radius-sm);
+	font-size: 16px;
+	color: var(--text-primary);
+	transition: all 0.3s ease;
+	font-family: var(--font-family);
+}
+
+input[type="password"]:focus {
+	outline: none;
+	border-color: var(--gold);
+	box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15), var(--shadow-gold);
+	background: var(--surface-lighter);
+}
+
+input[type="password"]:disabled {
+	background-color: var(--surface-dark);
+	cursor: not-allowed;
+	color: var(--text-muted);
+	opacity: 0.5;
+}
+
 button {
 	flex: 1;
 	padding: 14px 24px;
@@ -481,4 +508,11 @@ a:hover {
 	#tables {
 		padding: 0 12px;
 	}
+}
+
+.error {
+	color: red;
+	font-size: 16px;
+	margin-top: 10px;
+	margin-bottom: 10px;
 }

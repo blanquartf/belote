@@ -2,6 +2,10 @@ angular.module('meltdownApp', [])
   .controller('MainController', ['$http', '$timeout', function ($http, $timeout) {
     const vm = this;
     vm.username = (localStorage.getItem('username') || '').trim();
+    vm.token = (localStorage.getItem('token') || '').trim();
+    if (!vm.token) {
+      window.location.href='/login';
+    }
     if (vm.username) {
       vm.usernameInput = vm.username;
     }
