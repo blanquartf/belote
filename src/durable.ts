@@ -41,7 +41,6 @@ export class MyDurableObject extends DurableObject<Env> {
 				foundUserTable = new UserAndTable(tableName, user);
 
 				if (tableName != DEFAULT_TABLE) {
-					setNotReady(user);
 					user.teams = [];
 					users.delete(username);
 					panamaTable.set(username, user);
@@ -63,7 +62,6 @@ export class MyDurableObject extends DurableObject<Env> {
 		let oldTable = tables.get(foundUserTable.table);
 		if (oldTable) {
 			for (let user of oldTable.values()) {
-				setNotReady(user);
 				user.teams = [];
 				panamaTable.set(user.name, user);
 			}
