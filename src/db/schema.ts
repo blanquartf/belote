@@ -1,0 +1,103 @@
+import {
+  sqliteTable,
+  text,
+  integer,
+  primaryKey
+} from "drizzle-orm/sqlite-core";
+
+// ======================================================================
+// USERS TABLE
+// ======================================================================
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  pseudo: text("pseudo").notNull().unique(),
+  password: text("password"),
+  ready: integer("ready", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  admin: integer("admin", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  canPlayTarot: integer("canPlayTarot", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  canPlayTwoTables: integer("canPlayTwoTables", { mode: "boolean" })
+    .notNull()
+    .default(false),
+
+  token: text("token").unique(),
+  tokenValidity: text("tokenValidity"),
+
+  lastActiveAt: text("lastActiveAt"),  // store ISO date strings
+});
+
+// ======================================================================
+// GAME MODES TABLE
+// ======================================================================
+export const gameModes = sqliteTable("gamesModes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  name: text("name").notNull()
+});
+
+// ======================================================================
+// TABLES TABLE
+// ======================================================================
+export const tables = sqliteTable("tables", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+
+  name: text("name").notNull(),
+  finished: integer("finished", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  panama: integer("panama", { mode: "boolean" })
+    .notNull()
+    .default(false),
+
+  gamemodeId: integer("gamemode_id")
+    .notNull()
+    .references(() => gameModes.id, { onDelete: "cascade" })
+});
+
+// ======================================================================
+// TABLES_USERS (JOIN TABLE)
+// ======================================================================
+export const tablesUsers = sqliteTable(
+  "tables_users",
+  {
+    tableId: integer("table_id")
+      .notNull()
+      .references(() => tables.id, { onDelete: "cascade" }),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    winner: integer("admin", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    team: text("name"),
+  },
+  (t: any) => ({
+    pk: primaryKey({ columns: [t.tableId, t.userId] })
+  })
+);
+
+// ======================================================================
+// TABLES_USERS (JOIN TABLE)
+// ======================================================================
+export const users_gamemodes = sqliteTable(
+  "users_gamesModes",
+  {
+    gameModeId: integer("gamemode_id")
+      .notNull()
+      .references(() => gameModes.id, { onDelete: "cascade" }),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (t: any) => ({
+    pk: primaryKey({ columns: [t.gameModeId, t.userId] })
+  })
+);
