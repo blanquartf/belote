@@ -16,26 +16,28 @@
 		</form>
 
 		<div class="button_container">
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.quit()">Quit Meltdown ({{ctrl.username}})</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.finish()">Game finished (return to Panama)!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready()">Ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.notready()">NOT ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTarot()">Can play tarot!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTwoTables()">Can play two tables!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.quit()">Quitter Meltdown ({{ctrl.username}})</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.finish()">Partie terminée (return to Panama)!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready()">Je suis prêt!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.notready()">PAS Prêt!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTarot()">Tarot! (si 5)</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTwoTables()">
+				Deux tables! j'suis capable
+			</button>
 		</div>
 
 		<br />
 		<div id="tables">
 			<div ng-repeat="table in ctrl.tables">
-				<div class="table_ready_status">{{table.name}} : ({{table.readyCount}} / {{table.users.length}} ready)</div>
+				<div class="table_ready_status">{{table.name}} : ({{table.readyCount}} / {{table.users.length}} prêts)</div>
 				<table class="tables">
 					<thead>
 						<tr>
-							<th>Username</th>
+							<th>Joueur</th>
 							<th>Tarot</th>
-							<th>Two tables</th>
-							<th>Ready</th>
-							<th>Team</th>
+							<th>Deux tables</th>
+							<th>Prêt</th>
+							<th>Equipe</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -52,14 +54,16 @@
 				</table>
 				<hr class="table_separator" />
 			</div>
-	</div>
+		</div>
 
-	<div id="messages">{{ctrl.message}}</div>
+		<div id="messages">{{ctrl.message}}</div>
 
-	<div class="links-container">
-		<a href="/help">Aide</a>
-		<a href="/valeurs.webp" target="_blank">Valeur des cartes</a>
-		<a href="/backend">Backend</a>
-	</div>
-</body>
+		<div class="links-container">
+			<a href="/help">Aide</a>
+			<a href="/valeurs.webp" target="_blank">Valeur des cartes</a>
+			<a href="/backend">Backend</a>
+			<a href="https://github.com/AdrienPensart/belote" target="_blank">Code source</a>
+			<a href="https://github.com/AdrienPensart/belote/issues" target="_blank">Bug Tracker</a>
+		</div>
+	</body>
 </html>
