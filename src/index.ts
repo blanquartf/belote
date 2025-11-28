@@ -31,10 +31,20 @@ export default {
 			return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
 		}
 		let adminAuth = url.pathname.indexOf("/admin/") !== -1;
-		return stub.validateToken(request, async (user: User) => {
-			switch (url.pathname) {
+		let userOrResponse = await stub.validateToken(request,adminAuth);
+		if (userOrResponse instanceof Response) {
+			return userOrResponse;
+		}
+		let user : User = userOrResponse;
+		switch (url.pathname) {
 			case '/socket': {
-				return stub.getWebSocket(request);
+				try{
+					let response = await stub.fetch(request);
+					return response;
+				} catch(e) {
+					console.log(e);
+				}
+				
 			}
 			case '/passwordChange': {
 				return await stub.passwordChange(request, user);
@@ -115,6 +125,5 @@ export default {
 			default:
 				return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
 		}
-		},adminAuth);
-	},
+	}
 } satisfies ExportedHandler<Env>;

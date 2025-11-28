@@ -90,7 +90,7 @@ export class UserService {
     
         return userResult;
     }
-    async validateToken(request: Request, operation: (user: User) => Promise<Response>, admin: Boolean = false): Promise<Response> {
+    async validateToken(request: Request, admin: Boolean = false): Promise<User | Response> {
         const mustLoginResponse = new Response('you need to login', {
             status: 401,
         });
@@ -125,8 +125,8 @@ export class UserService {
         await this.db.update(users)
             .set({ tokenValidity: tokenValidity.toISOString() })
             .where(eq(users.id, userResult.id));
-    
-        return await operation(userResult);
+        
+        return userResult;
     }
 
     public async changeUserState(request: Request, pseudo: string) {

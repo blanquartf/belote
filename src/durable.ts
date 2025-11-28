@@ -51,8 +51,8 @@ export class MyDurableObject extends DurableObject<Env> {
 		response.headers.set('Authorization',token);
 		return response;
 	}
-	async validateToken(request: Request, operation: (user: User) => Promise<Response>, admin: Boolean = false): Promise<Response> {
-		return this.userService.validateToken(request,operation,admin);
+	async validateToken(request: Request, admin: Boolean = false): Promise<User | Response> {
+		return this.userService.validateToken(request,admin);
 	}
 	async changeUserState(request: Request, pseudo:string) {
 		await this.userService.changeUserState(request, pseudo);
@@ -93,24 +93,15 @@ export class MyDurableObject extends DurableObject<Env> {
 			session.send(`you must refresh tables because: ${reason}`);
 		});
 	}
-	getWebSocket(request: Request): Response {
-		try {
-			if (request.headers.get("Upgrade") !== "websocket") {
-				return new Response("Expected websocket", { status: 400 });
-			}
-
-			const pair = new WebSocketPair();
-			const [client, server] = [pair[0], pair[1]];
-
-			server.accept();
-
-			this.sessions.set(server, { id: 'pseudo' });
-			server.addEventListener('close', () => this.sessions.delete(server));
-
-			return new Response(null, { status: 101, webSocket: client });
-		} catch (err) {
-			console.error("WebSocket setup failed:", err);
-			return new Response("Internal Server Error", { status: 500 });
-		}
+	async fetch(request: Request): Promise<Response> {
+		const webSocketPair = new WebSocketPair();
+		const [client, server] = Object.values(webSocketPair);
+		this.ctx.acceptWebSocket(server);
+		const id = crypto.randomUUID();
+		//this.sessions.set(server, { id });
+		return new Response(null, {
+			status: 101,
+			webSocket: client,
+		});
 	}
 }
