@@ -17,7 +17,7 @@
 			<input type="password" ng-model="ctrl.password" placeholder="Ton ostie de mot de passe" required />
             
             <h2 class="error" ng-if="ctrl.loginError">Verify your credentials</h2>
-			<button type="submit">Je me connecte a la secte</button>
+			<button type="submit" ng-disabled="!ctrl.pseudo || !ctrl.password">Je me connecte a la secte</button>
 		</form>
 
         <form ng-submit="ctrl.createAccount()">
@@ -28,7 +28,7 @@
 			<input type="password" ng-model="ctrl.passwordOne" placeholder="Ton ostie de mot de passe" required />
             <input type="password" ng-model="ctrl.passwordTwo" placeholder="Securité de tu n'as pas fait d'osti de calisse de marde" required />
             <h2 class="error" ng-if="ctrl.accountCreationError">Pseudo used</h2>
-			<button type="submit">Je rejoins la secte</button>
+			<button type="submit" ng-disabled="!ctrl.newAccountPseudo || !ctrl.passwordOne || !ctrl.passwordTwo || ctrl.passwordTwo != ctrl.passwordOne">Je rejoins la secte</button>
 		</form>
 </body>
 </html>

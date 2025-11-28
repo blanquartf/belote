@@ -9,19 +9,16 @@
 		<script src="index_app.js"></script>
 	</head>
 	<body ng-controller="MainController as ctrl">
-		<form ng-submit="ctrl.join()">
-			<label for="username">Adepte:</label>
-			<input type="text" ng-model="ctrl.usernameInput" ng-disabled="ctrl.joinDisabled" placeholder="Ton ostie de pseudo" required />
-			<button type="submit" ng-disabled="ctrl.joinDisabled">Je rejoins la secte</button>
-		</form>
 
 		<div class="button_container">
 			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.quit()">Quit Meltdown ({{ctrl.username}})</button>
 			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.finish()">Game finished (return to Panama)!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready()">Ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.notready()">NOT ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTarot()">Can play tarot!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.toggleCanPlayTwoTables()">Can play two tables!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready(true)">Ready to play!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready(false)">NOT ready to play!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTarot(true)">Can play tarot!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTarot(false)">Cannot play tarot!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTwoTables(true)">Can play two tables!</button>
+			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTwoTables(false)">Cannot play two tables!</button>
 		</div>
 
 		<br />

@@ -24,4 +24,23 @@ angular.module('meltdownApp', [])
         vm.loginError = true;
       });
     };
+    vm.createAccount = function () {
+      $http({
+        method: 'POST',
+        url: '/createAccount',
+        data: {pseudo: vm.newAccountPseudo.trim(), password: vm.passwordTwo},
+        headers: {
+          'Accept': 'text/plain',
+          'Content-Type': 'text/plain'
+        },
+        responseType: 'text'
+      }).then(response => {
+        localStorage.setItem('username', vm.newAccountPseudo.trim());
+        localStorage.setItem('token', response.headers('Authorization'));
+        vm.loginError = false;
+        window.location.href='/';
+      }).catch((error) => {
+        vm.loginError = true;
+      });
+    };
   }]);

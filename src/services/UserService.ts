@@ -27,6 +27,8 @@ export class UserService {
         }
 
         let newToken = uuidv4();
+        const tokenValidity = new Date();
+        tokenValidity.setDate(tokenValidity.getDate() + 1);
 
         await this.db
         .insert(users)
@@ -35,8 +37,8 @@ export class UserService {
             password: await hash(password, saltRounds),               // store plain password only for testing!
             ready: false,
             admin: false,
-            token: null,
-            tokenValidity: null,
+            token: newToken,
+            tokenValidity: tokenValidity.toISOString(),
             lastActiveAt: new Date().toISOString()
         })
         .returning();
@@ -58,7 +60,7 @@ export class UserService {
         await this.db.update(users)
             .set({ password: await hash(body.newPassword, saltRounds) })
             .where(eq(users.id, user.id));
-    
+        
         return new Response(user.token, {
             status: 200,
         });
@@ -79,8 +81,11 @@ export class UserService {
         let newToken = uuidv4();
         userResult.token = newToken;
 
+        const tokenValidity = new Date();
+        tokenValidity.setDate(tokenValidity.getDate() + 1);
+
         await this.db.update(users)
-            .set({ token: newToken, tokenValidity: new Date().toISOString() })
+            .set({ token: newToken, tokenValidity: tokenValidity.toISOString() })
             .where(eq(users.id, userResult.id));
     
         return userResult;
@@ -90,26 +95,24 @@ export class UserService {
             status: 401,
         });
         
-        const authorization = request.headers.get('Authorization');
+        const authorization = request.headers.get('Authorization') ?? new URL(request.url).searchParams.get('auth_token')?.trim();
         if (!authorization) {
             return mustLoginResponse;
         }
-        const [scheme, encoded] = authorization.split(' ');
         
-        if (!encoded || scheme !== 'Basic') {
-            return new Response('malformed authorization header', {
-                status: 400,
-            });
-        }
-        
-        const token = Buffer.from(encoded, 'base64').toString();
+        const token = Buffer.from(authorization, 'base64').toString();
         const userResult = await this.db
             .select()
             .from(users)
             .where(eq(users.token, token)).get();
         
-        if (!userResult || !userResult.tokenValidity || (admin && !userResult.admin)) {
+        if (!userResult || !userResult.tokenValidity) {
             return mustLoginResponse;
+        }
+        if (admin && !userResult.admin) {
+            return new Response('you are not admin', {
+                status: 403,
+            });;
         }
         const now = new Date();
         const validity = new Date(userResult.tokenValidity);
@@ -117,8 +120,10 @@ export class UserService {
             return mustLoginResponse;
         }
 
+        const tokenValidity = new Date();
+        tokenValidity.setDate(tokenValidity.getDate() + 1);
         await this.db.update(users)
-            .set({ tokenValidity: new Date().toISOString() })
+            .set({ tokenValidity: tokenValidity.toISOString() })
             .where(eq(users.id, userResult.id));
     
         return await operation(userResult);

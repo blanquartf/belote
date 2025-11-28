@@ -21,34 +21,39 @@ export default {
 		if (!stub) {
 			return new Response(JSON.stringify({ message: 'Durable Object not found' }), { status: 500 });
 		}
-		console.log(url.pathname);
 		if (url.pathname==='/auth') {
 			return stub.authenticate(request);
 		}
 		if (url.pathname==='/createAccount') {
 			return stub.createAccount(request);
 		}
+		if (url.pathname.indexOf('favicon') !== -1) {
+			return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
+		}
 		let adminAuth = url.pathname.indexOf("/admin/") !== -1;
 		return stub.validateToken(request, async (user: User) => {
 			switch (url.pathname) {
+			case '/socket': {
+				return stub.getWebSocket(request);
+			}
 			case '/passwordChange': {
 				return await stub.passwordChange(request, user);
 			}
-			case '/public/tables': {
+			case '/tables': {
 				const tables = await stub.getTables();
 				return new Response(JSON.stringify(tables), success);
 			}
-			case '/me/changeUserState': {
+			case '/user/changeUserState': {
 				await stub.changeUserState(request,user.pseudo)
 				await stub.notifyAll(`user ${user.pseudo} toggleUserState!`);
 				return new Response(JSON.stringify({ message: `🎉 User changed state !` }), success);
 			}
-			case '/me/quit': {
+			case '/user/quit': {
 				await stub.quit(user.pseudo);
 				await stub.notifyAll(`user ${user.pseudo} disconnected`);
 				return new Response(JSON.stringify({ message: `🎉 User ${user.pseudo} disconnected!` }), success);
 			}
-			case '/me/finish': {
+			case '/user/finish': {
 				const winningTeam = url.searchParams.get('winningTeam');
 				if (!winningTeam) {
 					return new Response(JSON.stringify({ message: 'missing winningTeam' }), { status: 400 });
@@ -106,11 +111,6 @@ export default {
 				await stub.adminShuffleTables();
 				await stub.notifyAll(`tables shuffled`);
 				return new Response(JSON.stringify({ message: `🎉 New tables reshuffled` }), success);
-			}
-			case '/admin/meltdown': {
-				const response = stub.fetch(request);
-				console.log('admin user connected to room');
-				return response;
 			}
 			default:
 				return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
