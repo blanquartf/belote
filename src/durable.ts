@@ -51,8 +51,8 @@ export class MyDurableObject extends DurableObject<Env> {
 		response.headers.set('Authorization',token);
 		return response;
 	}
-	async validateToken(request: Request, admin: Boolean = false): Promise<User | Response> {
-		return this.userService.validateToken(request,admin);
+	async validateToken(token: string | undefined, admin: Boolean = false): Promise<User | Response> {
+		return this.userService.validateToken(token,admin);
 	}
 	async changeUserState(request: Request, pseudo:string) {
 		await this.userService.changeUserState(request, pseudo);

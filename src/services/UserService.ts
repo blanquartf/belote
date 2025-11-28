@@ -90,17 +90,16 @@ export class UserService {
     
         return userResult;
     }
-    async validateToken(request: Request, admin: Boolean = false): Promise<User | Response> {
+    async validateToken(requestToken: string | undefined, admin: Boolean = false): Promise<User | Response> {
         const mustLoginResponse = new Response('you need to login', {
             status: 401,
         });
-        
-        const authorization = request.headers.get('Authorization') ?? new URL(request.url).searchParams.get('auth_token')?.trim();
-        if (!authorization) {
+    
+        if (!requestToken) {
             return mustLoginResponse;
         }
         
-        const token = Buffer.from(authorization, 'base64').toString();
+        const token = Buffer.from(requestToken, 'base64').toString();
         const userResult = await this.db
             .select()
             .from(users)

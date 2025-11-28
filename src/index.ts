@@ -31,7 +31,8 @@ export default {
 			return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
 		}
 		let adminAuth = url.pathname.indexOf("/admin/") !== -1;
-		let userOrResponse = await stub.validateToken(request,adminAuth);
+		const authorization = request.headers.get('Authorization') ?? new URL(request.url).searchParams.get('auth_token')?.trim();
+		let userOrResponse = await stub.validateToken(authorization,adminAuth);
 		if (userOrResponse instanceof Response) {
 			return userOrResponse;
 		}
