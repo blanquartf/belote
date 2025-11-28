@@ -43,17 +43,15 @@ angular.module('meltdownApp', [])
     vm.message = 'disconnected';
 
     vm.quit = function () {
-      $http.get('/user/quit?username=' + encodeURIComponent(vm.username)).then(() => {
+      $http.get('/user/quit').then(() => {
         localStorage.removeItem('username');
         localStorage.removeItem('token');
         window.location.href='/';
-        vm.username = '';
-        vm.refreshTables();
       });
     };
 
     vm.finish = function () {
-      $http.get('/user/finish?username=' + encodeURIComponent(vm.username)).then((response) => {
+      $http.get('/user/finish').then((response) => {
         vm.refreshTables();
       });
     };
@@ -76,27 +74,19 @@ angular.module('meltdownApp', [])
     vm.refreshTables = function () {
       return $http.get('/tables').then((resp) => {
         const tablesData = resp.data;
-        vm.tables = Object.entries(tablesData).map(([name, users]) => {
-          const usersList = Object.values(users).map(user => ({
-            name: user.name,
-            ready: user.ready,
-            canPlayTarot: user.canPlayTarot,
-            canPlayTwoTables: user.canPlayTwoTables,
-            teams: user.teams
-          }));
-          const readyCount = usersList.filter(u => u.ready).length;
-          return { name, users: usersList, readyCount };
+        vm.tables = tablesData.map((fullTable) => {
+          let users = [];
+          for (var team of fullTable.teams) {
+            users = [...users, ...team.users.map((user) => {
+              return {
+                ...user,
+                team: team.name
+              };
+            })];
+          }
+          const readyCount = users.filter(u => u.ready).length;
+          return {name:fullTable.table.name, users: users, readyCount };
         });
-
-        const found = vm.tables.some(table =>
-          table.users.some(user => user.name === vm.username)
-        );
-
-        if (!found) {
-          vm.connected = false;
-          vm.joinDisabled = false;
-          localStorage.removeItem('username');
-        }
       });
     };
 

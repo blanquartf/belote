@@ -11,14 +11,14 @@
 	<body ng-controller="MainController as ctrl">
 
 		<div class="button_container">
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.quit()">Quit Meltdown ({{ctrl.username}})</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.finish()">Game finished (return to Panama)!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready(true)">Ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.ready(false)">NOT ready to play!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTarot(true)">Can play tarot!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTarot(false)">Cannot play tarot!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTwoTables(true)">Can play two tables!</button>
-			<button ng-if="ctrl.connected" class="secondary_background" ng-click="ctrl.canPlayTwoTables(false)">Cannot play two tables!</button>
+			<button class="secondary_background" ng-click="ctrl.quit()">Quit Meltdown ({{ctrl.pseudo}})</button>
+			<button class="secondary_background" ng-click="ctrl.finish()">Game finished (return to Panama)!</button>
+			<button class="secondary_background" ng-click="ctrl.ready(true)">Ready to play!</button>
+			<button class="secondary_background" ng-click="ctrl.ready(false)">NOT ready to play!</button>
+			<button class="secondary_background" ng-click="ctrl.canPlayTarot(true)">Can play tarot!</button>
+			<button class="secondary_background" ng-click="ctrl.canPlayTarot(false)">Cannot play tarot!</button>
+			<button class="secondary_background" ng-click="ctrl.canPlayTwoTables(true)">Can play two tables!</button>
+			<button class="secondary_background" ng-click="ctrl.canPlayTwoTables(false)">Cannot play two tables!</button>
 		</div>
 
 		<br />
@@ -38,7 +38,7 @@
 					<tbody>
 						<tr ng-repeat="user in table.users" ng-class="user.ready ? 'user_ready' : 'user_not_ready'">
 							<td ng-class="{'username_cell': user.name === ctrl.username}">
-								{{user.name}}<span ng-if="user.name === ctrl.username"> (you)</span>
+								{{user.pseudo}}<span ng-if="user.name === ctrl.username"> (you)</span>
 							</td>
 							<td>{{user.canPlayTarot ? '✅' : '❌'}}</td>
 							<td>{{user.canPlayTwoTables ? '✅' : '❌'}}</td>
