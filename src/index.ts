@@ -57,6 +57,9 @@ export default {
 			case '/passwordChange': {
 				return await stub.passwordChange(request, user.pseudo,false);
 			}
+			case '/user/stats': {
+				return new Response(JSON.stringify(await stub.getStats(user)));
+			}
 			case '/tables': {
 				const tables = await stub.getTables();
 				return new Response(JSON.stringify(tables), success);

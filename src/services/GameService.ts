@@ -1,7 +1,7 @@
-import { GameMode, Table, User, FullTable, Team } from '../db/schema.types';
+import { GameMode, Table, User, FullTable, Team, Stat } from '../db/schema.types';
 import { DrizzleSqliteDODatabase } from 'drizzle-orm/durable-sqlite';
 import { users, tables, tablesUsers, gameModes } from "../db/schema"; // your schema file
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { shuffleArray } from '../helpers';
 
 
@@ -85,16 +85,6 @@ export class GameService {
     }
 
     public async getTables(): Promise<FullTable[]> {
-         const Oldrows = await this.db
-        .select({
-            table: tables,
-            user: users,
-            tablesUsers: tablesUsers
-        })
-        .from(tables)
-        .leftJoin(tablesUsers, eq(tablesUsers.tableId, tables.id))
-        .leftJoin(users, eq(tablesUsers.userId, users.id));
-        console.log(JSON.stringify(Oldrows));
         const rows = await this.db
         .select({
             table: tables,
@@ -367,5 +357,67 @@ export class GameService {
                 await this.addUserToTable(player, ((await this.getPanamaTable()).table.id));
             }
         }
+    }
+
+    public async getStats(user: User) : Promise<Stat[]> {
+        const stats : Stat[] = [];
+        const bestWinningPartner: {partnerPseudo: string, gamesTogether: number, winPercentage: number}[] = await this.db.all(sql`
+                WITH partner_stats AS (
+                SELECT
+                tu2.user_id AS partnerId,
+                COUNT(DISTINCT tu2.table_id) AS gamesTogether,
+                SUM(
+                    CASE 
+                    WHEN tu1.winner = 1 AND tu2.winner = 1 
+                    THEN 1 ELSE 0 
+                    END
+                ) AS winsTogether
+                FROM tables_users tu1
+                JOIN tables_users tu2
+                ON tu1.table_id = tu2.table_id
+                JOIN tables tables
+                ON tu1.table_id = tables.id
+                WHERE tu1.user_id = ${user.id}
+                AND tu2.user_id != tu1.user_id and tables.finished = true
+                GROUP BY tu2.user_id
+            )
+            SELECT 
+                p.partnerId,
+                u.pseudo AS partnerPseudo,
+                p.gamesTogether,
+                p.winsTogether,
+                (CAST(p.winsTogether AS FLOAT) / p.gamesTogether) AS winPercentage
+            FROM partner_stats p
+            JOIN users u ON u.id = p.partnerId
+            ORDER BY winPercentage DESC, gamesTogether DESC
+            LIMIT 1;
+            `);
+        if (bestWinningPartner && bestWinningPartner[0]) {
+            stats.push({
+                value: `Ton meilleur partenaire ${bestWinningPartner[0].partnerPseudo} joué ${bestWinningPartner[0].gamesTogether} fois ${bestWinningPartner[0].winPercentage*100}% win`
+            });
+        }
+        const mostPlayedPartner: {partnerPseudo: string, gamesTogether: number}[] = await this.db.all(sql`
+                SELECT 
+                users.pseudo AS partnerPseudo,
+                COUNT(*) AS gamesTogether
+                FROM tables_users tu1
+                JOIN tables_users tu2
+                    ON tu1.table_id = tu2.table_id
+                JOIN users users
+                    ON users.id = tu2.user_id
+                WHERE tu1.user_id = ${user.id}
+                AND tu2.user_id != tu1.user_id
+                AND tu1.winner = true AND tu2.winner = true
+                GROUP BY tu2.user_id
+                ORDER BY gamesTogether DESC
+                LIMIT 1;
+            `);
+        if (mostPlayedPartner && mostPlayedPartner[0]) {
+            stats.push({
+            value: `Tu a joué le plus souvent avec ${mostPlayedPartner[0].partnerPseudo} ${mostPlayedPartner[0].gamesTogether} fois`
+            });
+        }
+        return stats;
     }
 }

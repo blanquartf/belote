@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { FullTable, User } from './db/schema.types';
+import { FullTable, Stat, User } from './db/schema.types';
 import { drizzle, type DrizzleSqliteDODatabase } from "drizzle-orm/durable-sqlite";
 import { GameService } from './services/GameService';
 import { UserService } from './services/UserService';
@@ -28,6 +28,10 @@ export class MyDurableObject extends DurableObject<Env> {
 	}
 	async _migrate() {
 		await migrate(this.db, migrations);
+	}
+
+	async getStats(user: User) : Promise<Stat[]> {
+		return await this.gameService.getStats(user);
 	}
 	
 	async passwordChange(request: Request, pseudo:string, admin: boolean): Promise<Response> {
