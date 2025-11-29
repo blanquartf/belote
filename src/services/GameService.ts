@@ -78,6 +78,10 @@ export class GameService {
             .returning().get();
         for (const team of teams) {
             for (const user of team.users) {
+                await this.db.delete(tablesUsers).where(and(
+                    eq(tablesUsers.tableId, (await this.getPanamaTable()).table.id),
+                    eq(tablesUsers.userId,user.id)
+                ));
                 await this.addUserToTableWithTeamName(user, newTable!!.id, team.name);
             }
         }
@@ -103,9 +107,16 @@ export class GameService {
             const tablesUsers = row.tablesUsers
 
             if (!map.has(table.id)) {
+                const teams: Team[] = [];
+                if (table.panama) {
+                    teams.push({
+                        name: TEAMS[0],
+                        users: []
+                    })
+                }
                 map.set(table.id, {
-                table,
-                teams: []
+                    table,
+                    teams: teams
                 });
             }
 
@@ -254,6 +265,7 @@ export class GameService {
             switch(playersSelected.length) {
                 case 4 :
                     teamsNeeded = 2;
+                    break;
                 case 5:
                     gameMode = await this.getGameMode('Tarot');
                     teamsNeeded = 5;
@@ -323,7 +335,7 @@ export class GameService {
             })
         }
         var nextTableAvailable = 1;
-        while (usedTableNames.filter((tableName) => tableName.startsWith(`Table ${nextTableAvailable} `))) {
+        while (usedTableNames.filter((tableName) => tableName.startsWith(`Table ${nextTableAvailable} `)).length > 0) {
             nextTableAvailable++;
         }
         await this.createTable(`Table ${nextTableAvailable} ${playerOnTwoTable ? '(Table of 7)' : ''}`,gameMode, teams);
