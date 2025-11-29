@@ -47,21 +47,32 @@ export class UserService {
             status: 200,
         });
     }
-    async passwordChange(request: Request, user: User): Promise<Response> {
-        const mustLoginResponse = new Response('you need to login', {
-            status: 401,
+    async passwordChange(request: Request, pseudo: string, admin: boolean): Promise<Response> {
+        const badPasswordReponse = new Response('bad password', {
+            status: 403,
         });
+        
         const body: {oldPassword: string, newPassword: string} = await request.json();
 
-        if (!await compare(body.oldPassword,user.password!!)) {
-            return mustLoginResponse;
+        const userResult = await this.db
+            .select()
+            .from(users)
+            .where(eq(users.pseudo, pseudo)).get();
+        if (!userResult) {
+            return new Response('User not found', {
+                status: 404,
+            });
+        }
+
+        if (!admin && !await compare(body.oldPassword,userResult!.password!!)) {
+            return badPasswordReponse;
         }
 
         await this.db.update(users)
             .set({ password: await hash(body.newPassword, saltRounds) })
-            .where(eq(users.id, user.id));
+            .where(eq(users.id, userResult!.id));
         
-        return new Response(user.token, {
+        return new Response(userResult!.token, {
             status: 200,
         });
     }
@@ -126,7 +137,11 @@ export class UserService {
             .set({ tokenValidity: tokenValidity.getTime() })
             .where(eq(users.id, userResult.id));
         
-        return userResult;
+        return {
+            ...userResult,
+            token: null,
+            password: null
+        };
     }
 
     public async changeUserState(request: Request, pseudo: string) {
@@ -155,11 +170,5 @@ export class UserService {
             .set({ tokenValidity: tokenValidity.getTime()})
             .where(eq(users.id, user.id));
         }
-    }
-
-    async resetUserPassword(request: Request, pseudo: string) {
-        await this.db.update(users)
-            .set({ password: await hash('tempPassword', saltRounds) })
-            .where(eq(users.pseudo, pseudo));
     }
 }

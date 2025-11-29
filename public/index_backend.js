@@ -43,13 +43,22 @@
 			}
 
 			vm.refreshTables = function () {
-				return $http.get('/public/tables')
-					.then(function (response) {
-						vm.tables = (typeof response.data === 'string') ? JSON.parse(response.data) : response.data;
-					})
-					.catch(function (err) {
-						vm.messages = 'Fetch error when refreshing tables: ' + (err && err.statusText ? err.statusText : err);
+				return $http.get('/tables').then((resp) => {
+					const tablesData = resp.data;
+					vm.tables = tablesData.map((fullTable) => {
+					let users = [];
+					for (var team of fullTable.teams) {
+						users = [...users, ...team.users.map((user) => {
+						return {
+							...user,
+							team: team.name
+						};
+						})];
+					}
+					const readyCount = users.filter(u => u.ready).length;
+					return {name:fullTable.table.name, users: users, readyCount };
 					});
+				});
 			};
 
 			vm.readyCount = function (users) {
@@ -94,12 +103,6 @@
 				}
 
 				connect();
-			};
-
-			vm.join = function () {
-				if (!vm.username.trim()) return;
-				$http.get('/admin/users/join?username=' + encodeURIComponent(vm.username.trim()))
-					.then(function () { vm.refreshTables(); })
 			};
 
 			vm.loadFixtures = function () {

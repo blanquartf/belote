@@ -51,8 +51,11 @@ export default {
 				}
 				
 			}
+			case '/me': {
+				return new Response(JSON.stringify(user));
+			}
 			case '/passwordChange': {
-				return await stub.passwordChange(request, user);
+				return await stub.passwordChange(request, user.pseudo,false);
 			}
 			case '/tables': {
 				const tables = await stub.getTables();
@@ -78,14 +81,6 @@ export default {
 				}
 				await stub.finish(parseInt(url.searchParams.get('tableId')!!), winningTeam, user.pseudo);
 			}
-			case '/admin/users/quit': {
-				const pseudo = url.searchParams.get('pseudo');
-				if (!pseudo) {
-					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
-				}
-				await stub.notifyAll(`user ${pseudo} disconnected`);
-				await stub.quit(pseudo);
-			}
 			case '/admin/users/toggleUserState': {
 				const pseudo = url.searchParams.get('pseudo');
 				if (!pseudo) {
@@ -95,6 +90,12 @@ export default {
 				await stub.notifyAll(`User ${pseudo} changed state`);
 				return new Response(JSON.stringify({ message: `🎉 User changed state!` }), success);
 			}
+			case '/admin/users/passwordChange':
+				const pseudo = url.searchParams.get('pseudo');
+				if (!pseudo) {
+					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
+				}
+				return await stub.passwordChange(request, pseudo, true);
 			case '/admin/users/finish': {
 				if (!url.searchParams.get('tableId')) {
 					return new Response(JSON.stringify({ message: 'missing tableId' }), { status: 400 });
@@ -105,6 +106,14 @@ export default {
 				}
 				await stub.finish(parseInt(url.searchParams.get('tableId')!!), winningTeam, undefined);
 				await stub.notifyAll(`table finished`);
+			}
+			case '/admin/users/quit': {
+				const pseudo = url.searchParams.get('pseudo');
+				if (!pseudo) {
+					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
+				}
+				await stub.notifyAll(`user ${pseudo} disconnected`);
+				await stub.quit(pseudo);
 			}
 			case '/admin/tables/delete': {
 				if (!url.searchParams.get('tableId')) {

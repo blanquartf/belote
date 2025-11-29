@@ -30,8 +30,8 @@ export class MyDurableObject extends DurableObject<Env> {
 		await migrate(this.db, migrations);
 	}
 	
-	async passwordChange(request: Request, user:User): Promise<Response> {
-		return this.userService.passwordChange(request, user);
+	async passwordChange(request: Request, pseudo:string, admin: boolean): Promise<Response> {
+		return this.userService.passwordChange(request, pseudo,admin);
 	}
 	async createAccount(request: Request): Promise<Response> {
 		return this.userService.createAccount(request);

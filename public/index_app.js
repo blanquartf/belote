@@ -108,7 +108,9 @@ angular.module('meltdownApp', [])
       };
     };
 
-    
+    $http.get('/me').then((response) => {
+      vm.user = response.data;
+    });
     vm.refreshTables().then(() => {
       vm.connectWebsocket();
     });
