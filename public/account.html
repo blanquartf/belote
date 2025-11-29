@@ -20,7 +20,7 @@
 			<button type="submit" ng-disabled="!ctrl.oldPassword || !ctrl.newPassword || !ctrl.newPasswordTwo || ctrl.newPassword != ctrl.newPasswordTwo">Je reset mon password</button>
 		</form>
         <form ng-submit="ctrl.resetUserPassword()" ng-if="ctrl.user.admin">
-            <h2>Changement de mot de passe</h2>
+            <h2>Changement de mot de passe d'un gars qui a perdu son mdp</h2>
 			<input type="text" ng-model="ctrl.pseudo" placeholder="Pseudo du joueur" required />
             <input type="password" ng-model="ctrl.newPassword" placeholder="Nouveau password du joueur" required />
             <h2 class="error" ng-if="ctrl.userPasswordResetChangeError">Bad user pseudo</h2>
