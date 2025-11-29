@@ -47,7 +47,7 @@
 							<td>{{user.canPlayTwoTables ? '✅' : '❌'}}</td>
 							<td>{{user.ready ? '✅' : '❌'}}</td>
 							<td ng-if="!table.panama"><span ng-style="{ color: user.team }" style="margin-right: 3px">{{user.team}}</span></td>
-							<button ng-click="ctrl.finish(table.id,user.team)" ng-if="table.inThatTable">On a gagné!</button>
+							<td><button ng-click="ctrl.finish(table.id,user.team)" ng-if="!table.panama && table.inThatTable && user.pseudo === ctrl.user.pseudo">On a gagné!</button></td>
 						</tr>
 					</tbody>
 				</table>

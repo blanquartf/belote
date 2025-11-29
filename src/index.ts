@@ -80,6 +80,7 @@ export default {
 					return new Response(JSON.stringify({ message: 'missing tableId' }), { status: 400 });
 				}
 				await stub.finish(parseInt(url.searchParams.get('tableId')!!), winningTeam, user.pseudo);
+				return new Response('ok', { status: 200 });
 			}
 			case '/admin/users/toggleUserState': {
 				const pseudo = url.searchParams.get('pseudo');
@@ -106,6 +107,7 @@ export default {
 				}
 				await stub.finish(parseInt(url.searchParams.get('tableId')!!), winningTeam, undefined);
 				await stub.notifyAll(`table finished`);
+				return new Response('ok', { status: 200 });
 			}
 			case '/admin/users/quit': {
 				const pseudo = url.searchParams.get('pseudo');
@@ -114,6 +116,7 @@ export default {
 				}
 				await stub.notifyAll(`user ${pseudo} disconnected`);
 				await stub.quit(pseudo);
+				return new Response('ok', { status: 200 });
 			}
 			case '/admin/tables/changeReadyState': {
 				await stub.changeReadyState(request);
