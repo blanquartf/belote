@@ -329,7 +329,7 @@ export class GameService {
         await this.createTable(`Table ${nextTableAvailable} ${playerOnTwoTable ? '(Table of 7)' : ''}`,gameMode, teams);
     }
 
-    public async finish(tableId: number, winningTeam: string | undefined, pseudo: string | undefined) {
+    public async finish(tableId: number, winningTeam: string, pseudo: string | undefined) {
         const fullTables = await this.getTables();
         const table = fullTables.filter((fullTable) => fullTable.table.id == tableId)[0];
         if (pseudo) {
@@ -346,11 +346,9 @@ export class GameService {
         await this.db.update(tables)
             .set({ finished: true })
             .where(eq(tables.id, tableId));
-        if (winningTeam) {
-            await this.db.update(tablesUsers)
+        await this.db.update(tablesUsers)
             .set({ winner: true })
             .where(and(eq(tablesUsers.tableId, tableId),eq(tablesUsers.team, winningTeam)));
-        }
         
         for (const team of table.teams) {
             for (const player of team.users) {
@@ -358,6 +356,31 @@ export class GameService {
             }
         }
     }
+    public async deleteTable(tableId: number) {
+        const fullTables = await this.getTables();
+        const table = fullTables.filter((fullTable) => fullTable.table.id == tableId)[0];
+        await this.db
+            .delete(tablesUsers)
+            .where(
+                and(
+                    eq(tablesUsers.tableId, tableId)
+                )
+            );
+        await this.db
+            .delete(tables)
+            .where(
+                and(
+                    eq(tables.id, tableId)
+                )
+            );
+        
+        for (const team of table.teams) {
+            for (const player of team.users) {
+                await this.addUserToTable(player, ((await this.getPanamaTable()).table.id));
+            }
+        }
+    }
+    
 
     public async getStats(user: User) : Promise<Stat[]> {
         const stats : Stat[] = [];

@@ -130,7 +130,7 @@ export default {
 				if (!url.searchParams.get('tableId')) {
 					return new Response(JSON.stringify({ message: 'missing tableId' }), { status: 400 });
 				}
-				await stub.finish(parseInt(url.searchParams.get('tableId')!!), undefined, undefined);
+				await stub.deleteTable(parseInt(url.searchParams.get('tableId')!!));
 				await stub.notifyAll(`table deleted`);
 				return new Response(JSON.stringify({ message: `🎉 Table deleted` }), success);
 			}

@@ -65,9 +65,14 @@ export class MyDurableObject extends DurableObject<Env> {
 		const userId = await this.userService.quit(pseudo);
 		return await this.gameService.quit(userId);
 	}
-	async finish(tableId: number, winningTeam: string | undefined, pseudo: string | undefined) {
+	async finish(tableId: number, winningTeam: string, pseudo: string | undefined) {
 		return await this.gameService.finish(tableId, winningTeam, pseudo);
 	}
+	async deleteTable(tableId: number) {
+		return await this.gameService.deleteTable(tableId);
+	}
+
+	
 
 	// for admin exclusively
 	async adminGenerateTables() {
