@@ -83,7 +83,7 @@ export class MyDurableObject extends DurableObject<Env> {
 		const allTables = await this.gameService.getTables();
 		const panamaTable = await this.gameService.getPanamaTable();
 		for (const fullTable of allTables.filter((fullTable) => fullTable.table.id !== panamaTable.table.id)) {
-			await this.gameService.finish(fullTable.table.id, undefined, undefined);
+			await this.gameService.deleteTable(fullTable.table.id);
 		}
 	}
 
