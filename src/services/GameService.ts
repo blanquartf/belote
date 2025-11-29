@@ -353,6 +353,9 @@ export class GameService {
         for (const team of table.teams) {
             for (const player of team.users) {
                 await this.addUserToTable(player, ((await this.getPanamaTable()).table.id));
+                await this.db.update(users)
+                    .set({ ready: false })
+                    .where(eq(users.id, player.id));
             }
         }
     }
