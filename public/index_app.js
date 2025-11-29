@@ -52,10 +52,12 @@ angular.module('meltdownApp', [])
       });
     };
 
-    vm.finish = function () {
-      $http.get('/user/finish').then((response) => {
-        vm.refreshTables();
-      });
+    vm.finish = function (tableId,teamName) {
+      if (window.confirm(`La team ${teamName} a gagné vous etes sur?`)) {
+        $http.get(`/user/finish?tableId=${tableId}&winningTeam=${teamName}`).then((response) => {
+          vm.refreshTables();
+        });
+      }
     };
 
     vm.ready = function (ready) {
@@ -74,6 +76,7 @@ angular.module('meltdownApp', [])
     }
 
     vm.refreshTables = function () {
+      vm.onTable = false;
       return $http.get('/tables').then((resp) => {
         const tablesData = resp.data;
         vm.tables = tablesData.map((fullTable) => {
@@ -86,8 +89,12 @@ angular.module('meltdownApp', [])
               };
             })];
           }
+          let onThatTable = users.find((elem) => elem.pseudo === vm.user.pseudo) !== undefined;
+          if (!fullTable.table.panama && onThatTable) {
+            vm.onTable = true;
+          }
           const readyCount = users.filter(u => u.ready).length;
-          return {name:fullTable.table.name, users: users, readyCount };
+          return {name:fullTable.table.name,id: fullTable.table.id,panama: fullTable.table.panama, users: users, readyCount, inThatTable: !fullTable.table.panama && onThatTable, teams:fullTable.teams};
         });
       });
     };
@@ -110,8 +117,8 @@ angular.module('meltdownApp', [])
 
     $http.get('/me').then((response) => {
       vm.user = response.data;
-    });
-    vm.refreshTables().then(() => {
-      vm.connectWebsocket();
+      vm.refreshTables().then(() => {
+          vm.connectWebsocket();
+      });
     });
   }]);

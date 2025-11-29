@@ -43,7 +43,7 @@ export class MyDurableObject extends DurableObject<Env> {
             	status: 401,
         	});
 		}
-		await this.gameService.addUserToTable(user, 1);
+		await this.gameService.addUserToTable(user, (await this.gameService.getPanamaTable()).table.id);
 		const token = Buffer.from(user.token!!).toString('base64');
 		const response = new Response(token, {
             status: 200,
@@ -58,7 +58,8 @@ export class MyDurableObject extends DurableObject<Env> {
 		await this.userService.changeUserState(request, pseudo);
 	}
 	async quit(pseudo: string) {
-		return await this.userService.quit(pseudo);
+		const userId = await this.userService.quit(pseudo);
+		return await this.gameService.quit(userId);
 	}
 	async finish(tableId: number, winningTeam: string | undefined, pseudo: string | undefined) {
 		return await this.gameService.finish(tableId, winningTeam, pseudo);
@@ -83,6 +84,10 @@ export class MyDurableObject extends DurableObject<Env> {
 
 		// regenerate
 		await this.adminGenerateTables();
+	}
+
+	async changeReadyState(request: Request) {
+		await this.gameService.changeReadyState(request);
 	}
 
 	async getTables(): Promise<FullTable[]> {

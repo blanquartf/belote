@@ -34,11 +34,10 @@
 		})
 		.controller('AdminCtrl', ['$http', '$timeout', '$scope', function ($http, $timeout, $scope) {
 			const vm = this;
-			vm.messages = 'disconnected';
-			vm.tables = {};
+			vm.tables = [];
 			vm.username = '';
-			vm.token = (localStorage.getItem('token') || '').trim();
-			if (!vm.token) {
+			vm.authToken = (localStorage.getItem('token') || '').trim();
+			if (!vm.authToken) {
 				window.location.href='/login';
 			}
 
@@ -46,24 +45,19 @@
 				return $http.get('/tables').then((resp) => {
 					const tablesData = resp.data;
 					vm.tables = tablesData.map((fullTable) => {
-					let users = [];
-					for (var team of fullTable.teams) {
-						users = [...users, ...team.users.map((user) => {
-						return {
-							...user,
-							team: team.name
-						};
-						})];
-					}
-					const readyCount = users.filter(u => u.ready).length;
-					return {name:fullTable.table.name, users: users, readyCount };
+						let users = [];
+						for (var team of fullTable.teams) {
+							users = [...users, ...team.users.map((user) => {
+							return {
+								...user,
+								team: team.name
+							};
+							})];
+						}
+						const readyCount = users.filter(u => u.ready).length;
+						return {name:fullTable.table.name,id: fullTable.table.id,panama: fullTable.table.panama, users: users, readyCount, teams:fullTable.teams };
 					});
 				});
-			};
-
-			vm.readyCount = function (users) {
-				if (!users) return 0;
-				return users.filter(function (u) { return u.ready; }).length;
 			};
 
 			let ws;
@@ -72,13 +66,8 @@
 				const scheme = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
 
 				function connect() {
-					try {
-						ws = new WebSocket(scheme + hostname + '/admin/meltdown');
-					} catch (e) {
-						vm.messages = 'WebSocket error: ' + e;
-						$timeout(connect, 1000);
-						return;
-					}
+					const ws = new WebSocket(scheme + location.host + '/socket?auth_token=' + encodeURIComponent(vm.authToken));
+      				vm.websocket = ws;
 
 					ws.onopen = function () {
 						vm.messages = 'Connected to Meltdown, tables updated';
@@ -87,27 +76,18 @@
 					};
 
 					ws.onmessage = function (event) {
-						vm.messages = 'Update tables because: ' + event.data;
-						$scope.$applyAsync();
 						vm.refreshTables();
 					};
 
 					ws.onerror = function () { try { ws.close(); } catch (e) { } };
 
 					ws.onclose = function () {
-						vm.messages = 'Disconnected from Meltdown!';
-						vm.tables = {};
 						$scope.$applyAsync();
 						$timeout(connect, 1000);
 					};
 				}
 
 				connect();
-			};
-
-			vm.loadFixtures = function () {
-				$http.get('/admin/users/fixtures').
-					then(function () { vm.refreshTables(); })
 			};
 
 			vm.clearTables = function () {
@@ -130,69 +110,55 @@
 					then(function () { })
 			};
 
-			vm.userDelete = function (username) {
-				$http.get('/admin/users/delete?username=' + encodeURIComponent(username)).
+			vm.ready = function (pseudo, ready) {
+				vm.changeUserState(pseudo,{ready});
+			};
+			vm.canPlayTarot = function (pseudo,canPlayTarot) {
+				vm.changeUserState(pseudo,{canPlayTarot});
+			};
+			vm.canPlayTwoTables = function (pseudo,canPlayTwoTables) {
+				vm.changeUserState(pseudo,{canPlayTwoTables});
+			};
+			vm.changeUserState= function(pseudo, body) {
+				$http.post('/admin/users/toggleUserState?pseudo=' + pseudo,body).then(() => {
+					vm.refreshTables();
+				});
+			}
+
+			vm.userDelete = function (pseudo) {
+				$http.get('/admin/users/quit?pseudo=' + encodeURIComponent(pseudo)).
 					then(function () {
 						vm.refreshTables();
 					})
 			};
 
-			vm.userFinish = function (username) {
-				$http.get('/admin/users/finish?username=' + encodeURIComponent(username)).
+			vm.tableFinished = function (tableId,teamName) {
+				if (window.confirm(`La team ${teamName} a gagné vous etes sur?`)) {
+					$http.get(`/admin/users/finish?tableId=${tableId}&winningTeam=${teamName}`).then((response) => {
+						vm.refreshTables();
+					});
+				}
+			};
+
+			vm.changeReadyState = function (tableId, ready) {
+				$http.post('/admin/tables/changeReadyState', {ready, tableId}).
 					then(function () {
 						vm.refreshTables();
 					})
 			};
 
-			vm.userReady = function (username) {
-				$http.get('/admin/users/ready?username=' + encodeURIComponent(username)).
-					then(function () {
-						vm.refreshTables();
-					})
-			};
-
-			vm.userNotReady = function (username) {
-				$http.get('/admin/users/notready?username=' + encodeURIComponent(username)).
-					then(function () {
-						vm.refreshTables();
-					})
-			};
-			vm.toggleCanPlayTarot = function (username) {
-				$http.get('/admin/users/toggleCanPlayTarot?username=' + encodeURIComponent(username)).
-					then(function () {
-						vm.refreshTables();
-					})
-			};
-
-			vm.toggleCanPlayTwoTables = function (username) {
-				$http.get('/admin/users/toggleCanPlayTwoTables?username=' + encodeURIComponent(username)).
-					then(function () {
-						vm.refreshTables();
-					})
-			};
-
-
-			vm.tableReady = function (table) {
-				$http.get('/admin/tables/ready?table=' + encodeURIComponent(table)).
-					then(function (response) {
-						vm.refreshTables();
-					})
-			};
-			vm.tableNotReady = function (table) {
-				$http.get('/admin/tables/notready?table=' + encodeURIComponent(table)).
-					then(function (response) {
-						vm.refreshTables();
-					})
-			};
-			vm.tableDelete = function (table) {
-				$http.get('/admin/tables/delete?table=' + encodeURIComponent(table)).
+			vm.tableDelete = function (tableId) {
+				$http.get('/admin/tables/delete?tableId=' + tableId).
 					then(response => {
 						vm.refreshTables();
 					})
 			};
 
-			// init
+			$http.get('/me').then((response) => {
+				vm.user = response.data;
+			});
+			vm.refreshTables().then(() => {
 			vm.connectWebsocket();
-			vm.refreshTables();
+			});
 		}]);
 })();

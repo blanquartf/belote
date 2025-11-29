@@ -158,17 +158,18 @@ export class UserService {
         
     }
 
-    public async quit(pseudo: string) {
+    public async quit(pseudo: string): Promise<number | undefined> {
         const user = await this.db
             .select()
             .from(users)
             .where(eq(users.pseudo, pseudo)).get();
         if (user) {
             const tokenValidity = new Date();
-        tokenValidity.setDate(tokenValidity.getDate() - 1);
+            tokenValidity.setDate(tokenValidity.getDate() - 1);
             await this.db.update(users)
-            .set({ tokenValidity: tokenValidity.getTime()})
-            .where(eq(users.id, user.id));
+                .set({ tokenValidity: tokenValidity.getTime()})
+                .where(eq(users.id, user.id));
+            return user.id;
         }
     }
 }

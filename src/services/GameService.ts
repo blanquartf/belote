@@ -1,7 +1,7 @@
 import { GameMode, Table, User, FullTable, Team } from '../db/schema.types';
 import { DrizzleSqliteDODatabase } from 'drizzle-orm/durable-sqlite';
 import { users, tables, tablesUsers, gameModes } from "../db/schema"; // your schema file
-import { and, eq, gte } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { shuffleArray } from '../helpers';
 
 
@@ -18,6 +18,18 @@ export class GameService {
     }
     public async addUserToTable(user:User, tableId: number) {
         await this.addUserToTableWithTeamName(user,tableId, TEAMS[0]);
+    }
+    public async quit(userId: number | undefined) {
+        if (userId) {
+            await this.db
+            .delete(tablesUsers)
+            .where(
+                and(
+                    eq(tablesUsers.tableId, (await this.getPanamaTable()).table.id),
+                    eq(tablesUsers.userId, userId)
+                )
+            )
+        }
     }
     private async addUserToTableWithTeamName(user:User, tableId: number, teamName: string) {
         const currentUserTables = await this.getCurrentTablesFromUser(user);
@@ -73,6 +85,16 @@ export class GameService {
     }
 
     public async getTables(): Promise<FullTable[]> {
+         const Oldrows = await this.db
+        .select({
+            table: tables,
+            user: users,
+            tablesUsers: tablesUsers
+        })
+        .from(tables)
+        .leftJoin(tablesUsers, eq(tablesUsers.tableId, tables.id))
+        .leftJoin(users, eq(tablesUsers.userId, users.id));
+        console.log(JSON.stringify(Oldrows));
         const rows = await this.db
         .select({
             table: tables,
@@ -82,10 +104,7 @@ export class GameService {
         .from(tables)
         .leftJoin(tablesUsers, eq(tablesUsers.tableId, tables.id))
         .leftJoin(users, eq(tablesUsers.userId, users.id))
-        .where(and(
-            eq(tables.finished, false),
-            gte(users.tokenValidity, new Date().getTime())
-        ));
+        .where(eq(tables.finished, false));
         const map = new Map<number, FullTable>();
 
         for (const row of rows) {
@@ -118,6 +137,23 @@ export class GameService {
         }
 
         return [...map.values()];
+    }
+
+    public async changeReadyState(request: Request) {
+        const body: {ready: boolean, tableId: number} = await request.json();
+        let tables = await this.getTables();
+        for (const fullTable of tables) {
+            if (fullTable.table.id == body.tableId) {
+                for (const team of fullTable.teams) {
+                    for (const user of team.users) {
+                        await this.db.update(users)
+                            .set({ ready: body.ready })
+                            .where(eq(users.id, user.id));
+                    }
+                }
+            }
+        }
+        
     }
 
     public async generateTables() {

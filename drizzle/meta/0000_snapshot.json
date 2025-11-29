@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f1ef5019-2604-4b1a-af0e-fb537ab7928c",
+  "id": "d95b942f-6a19-4e0f-ae6c-1e961f49062f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "gamesModes": {
@@ -106,16 +106,16 @@
           "notNull": true,
           "autoincrement": false
         },
-        "admin": {
-          "name": "admin",
+        "winner": {
+          "name": "winner",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": false
         },
-        "name": {
-          "name": "name",
+        "team": {
+          "name": "team",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -228,14 +228,14 @@
         },
         "tokenValidity": {
           "name": "tokenValidity",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "lastActiveAt": {
           "name": "lastActiveAt",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -259,65 +259,6 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "users_gamesModes": {
-      "name": "users_gamesModes",
-      "columns": {
-        "gamemode_id": {
-          "name": "gamemode_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "users_gamesModes_gamemode_id_gamesModes_id_fk": {
-          "name": "users_gamesModes_gamemode_id_gamesModes_id_fk",
-          "tableFrom": "users_gamesModes",
-          "tableTo": "gamesModes",
-          "columnsFrom": [
-            "gamemode_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "users_gamesModes_user_id_users_id_fk": {
-          "name": "users_gamesModes_user_id_users_id_fk",
-          "tableFrom": "users_gamesModes",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "users_gamesModes_gamemode_id_user_id_pk": {
-          "columns": [
-            "gamemode_id",
-            "user_id"
-          ],
-          "name": "users_gamesModes_gamemode_id_user_id_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     }

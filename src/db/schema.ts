@@ -73,31 +73,12 @@ export const tablesUsers = sqliteTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    winner: integer("admin", { mode: "boolean" })
+    winner: integer("winner", { mode: "boolean" })
       .notNull()
       .default(false),
-    team: text("name"),
+    team: text("team"),
   },
   (t: any) => ({
     pk: primaryKey({ columns: [t.tableId, t.userId] })
-  })
-);
-
-// ======================================================================
-// TABLES_USERS (JOIN TABLE)
-// ======================================================================
-export const users_gamemodes = sqliteTable(
-  "users_gamesModes",
-  {
-    gameModeId: integer("gamemode_id")
-      .notNull()
-      .references(() => gameModes.id, { onDelete: "cascade" }),
-
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (t: any) => ({
-    pk: primaryKey({ columns: [t.gameModeId, t.userId] })
   })
 );

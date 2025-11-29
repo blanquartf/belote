@@ -84,7 +84,7 @@ export default {
 			case '/admin/users/toggleUserState': {
 				const pseudo = url.searchParams.get('pseudo');
 				if (!pseudo) {
-					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
+					return new Response(JSON.stringify({ message: 'missing pseudo' }), { status: 400 });
 				}
 				await stub.changeUserState(request, pseudo);
 				await stub.notifyAll(`User ${pseudo} changed state`);
@@ -93,7 +93,7 @@ export default {
 			case '/admin/users/passwordChange':
 				const pseudo = url.searchParams.get('pseudo');
 				if (!pseudo) {
-					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
+					return new Response(JSON.stringify({ message: 'missing pseudo' }), { status: 400 });
 				}
 				return await stub.passwordChange(request, pseudo, true);
 			case '/admin/users/finish': {
@@ -110,10 +110,15 @@ export default {
 			case '/admin/users/quit': {
 				const pseudo = url.searchParams.get('pseudo');
 				if (!pseudo) {
-					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
+					return new Response(JSON.stringify({ message: 'missing pseudo' }), { status: 400 });
 				}
 				await stub.notifyAll(`user ${pseudo} disconnected`);
 				await stub.quit(pseudo);
+			}
+			case '/admin/tables/changeReadyState': {
+				await stub.changeReadyState(request);
+				await stub.notifyAll(`tables ready`);
+				return new Response(JSON.stringify({ message: `🎉 Tables ready` }), success);
 			}
 			case '/admin/tables/delete': {
 				if (!url.searchParams.get('tableId')) {
@@ -137,6 +142,10 @@ export default {
 				await stub.adminShuffleTables();
 				await stub.notifyAll(`tables shuffled`);
 				return new Response(JSON.stringify({ message: `🎉 New tables reshuffled` }), success);
+			}
+			case '/admin/notify': {
+				await stub.notifyAll('force notify all');
+				return new Response(JSON.stringify({ message: `🎉 Users notified!` }), success);
 			}
 			default:
 				return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
