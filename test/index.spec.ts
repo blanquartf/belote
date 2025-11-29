@@ -1,7 +1,6 @@
-import { env, createExecutionContext, waitOnExecutionContext, SELF } from 'cloudflare:test';
+import { SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import worker from '../src';
-import { DEFAULT_TABLE, Table, generateTables, affectTables } from '../src/table';
+import { DEFAULT_TABLE, generateTables, affectTables } from '../src/table';
 import { readyPlayer, readyPlayerTwoTables, readyPlayerTarot } from '../src/user';
 
 describe('Get frontend', () => {

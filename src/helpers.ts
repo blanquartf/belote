@@ -15,10 +15,3 @@ export function shuffleArray<T>(array: T[]): T[] {
 
 	return newArray;
 }
-
-export function replacer(key: string, value: any): any {
-	if (value instanceof Map) {
-		return Array.from(value.values());
-	}
-	return value;
-}
