@@ -22,10 +22,14 @@ export default {
 			return new Response(JSON.stringify({ message: 'Durable Object not found' }), { status: 500 });
 		}
 		if (url.pathname==='/auth') {
-			return stub.authenticate(request);
+			let response = await stub.authenticate(request);
+			await stub.notifyAll(`user connected!`);
+			return response;
 		}
 		if (url.pathname==='/createAccount') {
-			return stub.createAccount(request);
+			let response = stub.createAccount(request);
+			await stub.notifyAll(`user connected!`);
+			return response;
 		}
 		if (url.pathname.indexOf('favicon') !== -1) {
 			return new Response(JSON.stringify({ message: `url ${url} not found` }), { status: 404 });
@@ -79,6 +83,7 @@ export default {
 				if (!pseudo) {
 					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
 				}
+				await stub.notifyAll(`user ${pseudo} disconnected`);
 				await stub.quit(pseudo);
 			}
 			case '/admin/users/toggleUserState': {
@@ -87,7 +92,7 @@ export default {
 					return new Response(JSON.stringify({ message: 'missing username' }), { status: 400 });
 				}
 				await stub.changeUserState(request, pseudo);
-				await stub.notifyAll('User changed state');
+				await stub.notifyAll(`User ${pseudo} changed state`);
 				return new Response(JSON.stringify({ message: `🎉 User changed state!` }), success);
 			}
 			case '/admin/users/finish': {
@@ -99,6 +104,7 @@ export default {
 					return new Response(JSON.stringify({ message: 'missing winningTeam' }), { status: 400 });
 				}
 				await stub.finish(parseInt(url.searchParams.get('tableId')!!), winningTeam, undefined);
+				await stub.notifyAll(`table finished`);
 			}
 			case '/admin/tables/delete': {
 				if (!url.searchParams.get('tableId')) {

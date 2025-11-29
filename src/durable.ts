@@ -98,7 +98,10 @@ export class MyDurableObject extends DurableObject<Env> {
 		const [client, server] = Object.values(webSocketPair);
 		this.ctx.acceptWebSocket(server);
 		const id = crypto.randomUUID();
-		//this.sessions.set(server, { id });
+		this.sessions.set(server, { id });
+		server.addEventListener('close', () => {
+			this.sessions.delete(server);
+		});
 		return new Response(null, {
 			status: 101,
 			webSocket: client,

@@ -18,8 +18,8 @@ angular.module('meltdownApp', [])
                 // For example, display error messages, redirect to login, or retry
                 console.error('Error response intercepted:', rejection);
                 if (rejection.status === 401) {
-                  //localStorage.removeItem('token');
-                  //window.location.href='/login';
+                  localStorage.removeItem('token');
+                  window.location.href='/login';
                 }
                 
                 return $q.reject(rejection); // Always return a rejected promise
@@ -40,13 +40,15 @@ angular.module('meltdownApp', [])
       vm.usernameInput = vm.username;
     }
     vm.tables = [];
-    vm.message = 'disconnected';
 
     vm.quit = function () {
       $http.get('/user/quit').then(() => {
-        localStorage.removeItem('username');
-        localStorage.removeItem('token');
-        window.location.href='/';
+        vm.websocket.close();
+        setTimeout(() => {
+          localStorage.removeItem('username');
+          localStorage.removeItem('token');
+          window.location.href='/';
+        }, 500);
       });
     };
 
@@ -93,22 +95,15 @@ angular.module('meltdownApp', [])
     vm.connectWebsocket = function () {
       const scheme = location.protocol === 'http:' ? 'ws://' : 'wss://';
       const ws = new WebSocket(scheme + location.host + '/socket?auth_token=' + encodeURIComponent(vm.authToken));
-
-      ws.onopen = () => {
-        vm.message = 'Connected to Meltdown, tables updated';
-        // vm.refreshTables();
-      };
+      vm.websocket = ws;
 
       ws.onmessage = (event) => {
-        vm.message = `Update tables because : ${event.data}`;
         vm.refreshTables();
       };
 
       ws.onerror = () => ws.close();
 
       ws.onclose = () => {
-        vm.message = 'Disconnected from Meltdown!';
-        vm.tables = [];
         $timeout(vm.connectWebsocket, 1000);
       };
     };

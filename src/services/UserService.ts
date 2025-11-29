@@ -38,8 +38,8 @@ export class UserService {
             ready: false,
             admin: false,
             token: newToken,
-            tokenValidity: tokenValidity.toISOString(),
-            lastActiveAt: new Date().toISOString()
+            tokenValidity: tokenValidity.getTime(),
+            lastActiveAt: new Date().getTime()
         })
         .returning();
     
@@ -85,7 +85,7 @@ export class UserService {
         tokenValidity.setDate(tokenValidity.getDate() + 1);
 
         await this.db.update(users)
-            .set({ token: newToken, tokenValidity: tokenValidity.toISOString() })
+            .set({ token: newToken, tokenValidity: tokenValidity.getTime() })
             .where(eq(users.id, userResult.id));
     
         return userResult;
@@ -114,15 +114,16 @@ export class UserService {
             });;
         }
         const now = new Date();
-        const validity = new Date(userResult.tokenValidity);
-        if (isNaN(validity.getTime()) || validity < now) {
+        const validity = new Date();
+        validity.setTime(userResult.tokenValidity);
+        if (isNaN(validity.getTime()) || validity.getTime() < now.getTime()) {
             return mustLoginResponse;
         }
 
         const tokenValidity = new Date();
         tokenValidity.setDate(tokenValidity.getDate() + 1);
         await this.db.update(users)
-            .set({ tokenValidity: tokenValidity.toISOString() })
+            .set({ tokenValidity: tokenValidity.getTime() })
             .where(eq(users.id, userResult.id));
         
         return userResult;
@@ -148,15 +149,17 @@ export class UserService {
             .from(users)
             .where(eq(users.pseudo, pseudo)).get();
         if (user) {
+            const tokenValidity = new Date();
+        tokenValidity.setDate(tokenValidity.getDate() - 1);
             await this.db.update(users)
-            .set({ tokenValidity: new Date(new Date().getDate() - 1).toISOString()})
+            .set({ tokenValidity: tokenValidity.getTime()})
             .where(eq(users.id, user.id));
         }
     }
 
     async resetUserPassword(request: Request, pseudo: string) {
         await this.db.update(users)
-            .set({ password: await bcrypt.hash('tempPassword', saltRounds) })
+            .set({ password: await hash('tempPassword', saltRounds) })
             .where(eq(users.pseudo, pseudo));
     }
 }

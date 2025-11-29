@@ -27,9 +27,9 @@ export const users = sqliteTable("users", {
     .default(false),
 
   token: text("token").unique(),
-  tokenValidity: text("tokenValidity"),
+  tokenValidity: integer("tokenValidity"),
 
-  lastActiveAt: text("lastActiveAt"),  // store ISO date strings
+  lastActiveAt: integer("lastActiveAt"),
 });
 
 // ======================================================================

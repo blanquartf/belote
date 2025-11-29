@@ -1,7 +1,7 @@
 import { GameMode, Table, User, FullTable, Team } from '../db/schema.types';
 import { DrizzleSqliteDODatabase } from 'drizzle-orm/durable-sqlite';
 import { users, tables, tablesUsers, gameModes } from "../db/schema"; // your schema file
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 import { shuffleArray } from '../helpers';
 
 
@@ -43,16 +43,18 @@ export class GameService {
         ).get()!!;
     }
     public async getCurrentTablesFromUser(user:User) : Promise<Table[] > {
-        return await this.db
-        .select()
-        .from(tables)
-        .innerJoin(tablesUsers, eq(tablesUsers.tableId, tables.id))
+        return (await this.db
+        .select({
+            table: tables,
+        })
+        .from(tablesUsers)
+        .innerJoin(tables, eq(tables.id, tablesUsers.tableId))
         .where(
             and(
                 eq(tablesUsers.userId, user.id),
                 eq(tables.finished, false),
             )
-        ).all().map((elem) => elem.tables);
+        )).map((elem) => elem.table);
     }
     public async createTable(tableName: string, gameMode: GameMode, teams: Team[]): Promise<Table> {
         const newTable: Table = await this.db
@@ -80,8 +82,10 @@ export class GameService {
         .from(tables)
         .leftJoin(tablesUsers, eq(tablesUsers.tableId, tables.id))
         .leftJoin(users, eq(tablesUsers.userId, users.id))
-        .where(eq(tables.finished, false))
-        .all();
+        .where(and(
+            eq(tables.finished, false),
+            gte(users.tokenValidity, new Date().getTime())
+        ));
         const map = new Map<number, FullTable>();
 
         for (const row of rows) {
@@ -99,10 +103,11 @@ export class GameService {
             if (user) {
                 let currentTeam = map.get(table.id)!.teams.find((team) => team.name === tablesUsers!!.team);
                 if (!currentTeam) {
-                    map.get(table.id)!.teams.push({
+                    currentTeam = {
                         name: tablesUsers!!.team!!,
                         users: []
-                    });
+                    };
+                    map.get(table.id)!.teams.push(currentTeam);
                 }
                 currentTeam?.users.push({
                     ...user,
